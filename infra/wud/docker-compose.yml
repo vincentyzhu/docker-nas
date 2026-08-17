@@ -1,0 +1,84 @@
+# ============================================================
+# WUD (What's Up Docker) — Docker 镜像更新通知
+# 自动检测容器镜像更新，通过邮件/钉钉发送通知
+#
+# 部署前准备:
+#   1. 填写 SMTP QQ 邮箱信息（USER/PASS/FROM/TO）
+#   2. 设置 Web 登录账号密码（WUD_AUTH_BASIC_*）
+#   3. 数据持久化在 ./store
+#
+# SMTP 说明:
+#   - HOST: smtp.qq.com, PORT: 465 (SSL)
+#   - PASS 需要 QQ 邮箱 SMTP 授权码（非 QQ 密码）
+#   - TO 可多个收件人，逗号分隔
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:3000
+# ============================================================
+
+name: wud
+
+services:
+  wud:
+    image: getwud/wud:latest
+    container_name: wud
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./store:/store
+
+    environment:
+      TZ: Asia/Shanghai
+
+      # Docker 本机监控
+      WUD_WATCHER_LOCAL_SOCKET: /var/run/docker.sock
+      WUD_WATCHER_LOCAL_WATCHBYDEFAULT: true
+      WUD_LOG_LEVEL: warn
+      # 每日10点扫描一次
+      WUD_WATCHER_LOCAL_CRON: "0 10 * * *"
+
+      # SMTP Trigger 名称，这里取 qq
+      WUD_TRIGGER_SMTP_QQ_HOST: smtp.qq.com
+      WUD_TRIGGER_SMTP_QQ_PORT: 465
+      # 启用 SSL（465端口）
+      WUD_TRIGGER_SMTP_QQ_TLS_ENABLED: true
+      # 登录账号，替换为实际值
+      WUD_TRIGGER_SMTP_QQ_USER: 
+      # QQ邮箱 SMTP 授权码（不是QQ密码），替换为实际值
+      WUD_TRIGGER_SMTP_QQ_PASS: 
+      # 发件人，替换为实际值
+      WUD_TRIGGER_SMTP_QQ_FROM: 
+      # 收件人，可多个，逗号分隔，替换为实际值
+      WUD_TRIGGER_SMTP_QQ_TO: 
+      # 邮件标题（可选）
+      WUD_TRIGGER_SMTP_QQ_SIMPLETITLE: "WUD: $${name} 有可用更新"
+      # 邮件正文模板（可选）
+      WUD_TRIGGER_SMTP_QQ_SIMPLEBODY: |
+        容器 $${name} 有新版本
+        当前版本：$${local}
+        最新版本：$${remote}
+
+      # Web登录 — 替换为实际值
+      # 用户名和 bcrypt 哈希，可用 htpasswd -nB <用户名> 生成
+      WUD_AUTH_BASIC_VINCENT_USER: 
+      WUD_AUTH_BASIC_VINCENT_HASH: 
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 512m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s

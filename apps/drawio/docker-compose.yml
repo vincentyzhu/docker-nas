@@ -1,0 +1,39 @@
+# ============================================================
+# draw.io — 在线流程图/图表编辑器
+# 功能完整的绘图工具，支持导出多种格式
+#
+# 部署前准备: 无需额外配置
+# DRAWIO_BASE_URL 留空则自动检测，nginx 反代时需填写
+# 启动:      docker compose up -d
+# 访问:      http://host:8080
+# ============================================================
+
+name: drawio
+
+services:
+  drawio:
+    image: jgraph/drawio:latest
+    container_name: drawio
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      DRAWIO_BASE_URL: ""
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 30s

@@ -1,0 +1,35 @@
+# ============================================================
+# pic-smaller — 在线图片压缩工具
+# 支持 JPEG/PNG/WebP 等格式批量压缩，纯浏览器端处理
+#
+# 部署前准备: 无需额外配置
+# 启动:      docker compose up -d
+# 访问:      http://host:3001
+# ============================================================
+
+name: pic-smaller
+
+services:
+  pic-smaller:
+    image: vimiix/pic-smaller:latest
+    container_name: pic-smaller
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "3001:3001"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 15s

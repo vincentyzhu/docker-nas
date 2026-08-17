@@ -1,0 +1,75 @@
+# ============================================================
+# RustDesk Server — 自托管远程桌面服务端（公网服务器）
+# 包含两个服务:
+#   hbbs — ID/注册服务器（端口 21115/21116）
+#   hbbr — 中继服务器（端口 21117）
+#
+# 部署前准备:
+#   1. 首次启动后，用 hbbs 生成的公钥配置客户端
+#      （公钥位于 ./data/id_ed25519.pub）
+#   2. 防火墙放行端口: 21115-21117 TCP + 21116 UDP
+#
+# 端口说明（host 网络模式，自动监听）:
+#   21115 TCP — NAT 类型测试
+#   21116 TCP — TCP 打洞/连接
+#   21116 UDP — ID 注册与心跳
+#   21117 TCP — 中继服务
+#
+# 启动:      docker compose up -d
+# ============================================================
+
+name: rustdesk-server
+
+services:
+  hbbs:
+    image: rustdesk/rustdesk-server:1.1.16
+    container_name: hbbs
+    network_mode: host
+    restart: unless-stopped
+    init: true
+
+    command: hbbs
+    volumes:
+      - ./data:/root
+
+    depends_on:
+      - hbbr
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s
+
+  hbbr:
+    image: rustdesk/rustdesk-server:1.1.16
+    container_name: hbbr
+    network_mode: host
+    restart: unless-stopped
+    init: true
+
+    command: hbbr
+    volumes:
+      - ./data:/root
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s

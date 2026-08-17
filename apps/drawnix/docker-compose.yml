@@ -1,0 +1,38 @@
+# ============================================================
+# drawnix — 在线白板 + 思维导图
+# 支持手绘风格白板、思维导图、流程图，可协作编辑
+#
+# 部署前准备: 无需额外配置
+# 启动:      docker compose up -d
+# 访问:      http://host:80
+# ============================================================
+
+name: drawnix
+
+services:
+  drawnix:
+    image: pubuzhixing/drawnix:latest
+    container_name: drawnix
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "80:80"
+
+    environment:
+      TZ: Asia/Shanghai
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    stop_grace_period: 30s

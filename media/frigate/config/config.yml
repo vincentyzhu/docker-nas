@@ -1,0 +1,131 @@
+# ============================================================
+# Frigate 主配置文件
+# 作用：配置摄像头 RTSP 流接入、AI 检测、录像与快照策略
+#
+# 敏感值占位符（部署前替换为实际值）：
+#   - mosquitto服务IP       → MQTT Broker 的 IP（bridge 网络无法用容器名解析）
+#   - 摄像头登录用户/密码    → 摄像头 RTSP 认证凭证
+#   - 摄像头IP             → 摄像头局域网 IP
+#   - go2rtc信令所在IP      → go2rtc WebRTC 信令地址
+# ============================================================
+
+# ---------- MQTT 消息总线 ----------
+mqtt:
+  enabled: true
+  # MQTT Broker 地址 — 替换为实际 IP（bridge 网络不解析容器名，故用 IP 而非容器名）
+  host: mosquitto服务IP
+  port: 1883
+  # 事件主题前缀，检测事件发布到 frigate/events
+  topic_prefix: frigate
+
+# ---------- go2rtc 流重推 ----------
+go2rtc:
+  streams:
+    # 主码流（高清，用于录像与实时预览）
+    ipc43aw_main:
+      # RTSP 主码流地址 — 替换为摄像头实际凭证与 IP
+      - rtsp://摄像头登录用户:摄像头登录密码@摄像头IP:554/stream1
+      # 多路复用，供 WebRTC 与 FFmpeg 同时拉流
+      - multitrans://摄像头登录用户:摄像头登录密码@摄像头IP:554
+      # 转码为 opus 音频，供浏览器 WebRTC 播放
+      - ffmpeg:ipc43aw_main#audio=opus
+    # 子码流（低清，专用于 AI 检测，降低推理负载）
+    ipc43aw_sub:
+      # RTSP 子码流地址 — 替换为摄像头实际凭证与 IP
+      - rtsp://摄像头登录用户:摄像头登录密码@摄像头IP:554/stream2
+
+  webrtc:
+    candidates:
+      # WebRTC 信令地址 — 替换为 go2rtc 所在 IP（局域网访问填 NAS IP）
+      - go2rtc信令所在IP:8555
+
+# ---------- FFmpeg 硬件加速 ----------
+ffmpeg:
+  # VAAPI 硬解（Intel 核显 Quick Sync），配合 compose 中的 /dev/dri 设备直通
+  # 无核显时删除本行改用 CPU 软解，或改为 preset-intel-qsv-h264
+  hwaccel_args: preset-vaapi
+
+# ---------- 摄像头定义 ----------
+cameras:
+  # 摄像头名称（自定义，需与 go2rtc streams 中的流名对应）
+  ipc43aw:
+    # ONVIF 协议（自动发现码流、PTZ 控制等）
+    onvif:
+      host: 摄像头IP           # 替换为摄像头 IP
+      port: 80
+      user: 摄像头登录用户      # 替换为摄像头登录用户
+      password: 摄像头登录密码   # 替换为摄像头登录密码
+
+    ffmpeg:
+      inputs:
+        # 主码流 → 录像（record 角色）
+        # 127.0.0.1:8554 是容器内 go2rtc 重推地址，无需修改
+        - path: rtsp://127.0.0.1:8554/ipc43aw_main
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+
+        # 子码流 → AI 检测（detect 角色，低分辨率降低推理负载）
+        - path: rtsp://127.0.0.1:8554/ipc43aw_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+
+    # 实时预览流（Web UI 中切换清晰度）
+    live:
+      streams:
+        高清: ipc43aw_main
+        标清: ipc43aw_sub
+
+    # AI 检测参数
+    detect:
+      enabled: true
+      width: 704           # 检测分辨率宽（建议与子码流一致）
+      height: 576          # 检测分辨率高
+      fps: 15              # 检测帧率
+
+    # 录像策略
+    record:
+      enabled: true
+      continuous:
+        days: 0            # 连续录像保留天数（0 = 不启用 24/7 连续录像，仅录事件）
+      motion:
+        days: 7            # 事件（移动检测）录像保留天数
+
+    # 快照
+    snapshots:
+      enabled: true
+      bounding_box: true   # 在快照上绘制检测框
+      retain:
+        default: 30        # 快照保留天数
+
+# ---------- 检测跟踪对象 ----------
+objects:
+  track:
+    - person
+    - car
+    - dog
+    - cat
+    - bird
+
+# Frigate 配置格式版本（勿改）
+version: 0.17-0
+
+# ---------- 语义搜索（实验性功能，占用资源，默认关闭） ----------
+semantic_search:
+  enabled: false
+  model_size: small
+
+# ---------- 人脸识别 ----------
+face_recognition:
+  enabled: true
+  model_size: small
+
+# ---------- 车牌识别（默认关闭） ----------
+lpr:
+  enabled: false
+
+# ---------- 分类检测（bird 已关闭） ----------
+classification:
+  bird:
+    enabled: false

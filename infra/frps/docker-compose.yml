@@ -1,0 +1,46 @@
+# ============================================================
+# frps — FRP 内网穿透服务端（公网服务器）
+# 接收内网 frpc 客户端的穿透请求，对外提供端口映射
+#
+# 部署前准备:
+#   1. 填写 frps.toml 中的 auth.token（与 frpc 客户端保持一致）
+#   2. 填写 allowPorts 端口范围（允许 frpc 穿透的端口区间）
+#   3. 填写 webServer.user / password（面板登录凭证）
+#
+# 注意: 使用 host 网络模式，直接监听宿主机端口
+#   - bindPort 6111: frpc 客户端连接端口
+#   - webServer 6001: 面板端口（仅监听本机，由 Nginx 反代对外）
+#
+# 启动:      docker compose up -d
+# ============================================================
+
+name: frps
+
+services:
+  frps:
+    image: fatedier/frps:latest
+    container_name: frps
+    network_mode: host
+    restart: unless-stopped
+    init: true
+
+    volumes:
+      - ./frps.toml:/etc/frp/frps.toml:ro
+
+    command:
+      - -c
+      - /etc/frp/frps.toml
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s

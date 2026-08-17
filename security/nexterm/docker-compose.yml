@@ -1,0 +1,47 @@
+# ============================================================
+# Nexterm — Web SSH 终端
+# 浏览器端 SSH 客户端，无需安装任何软件
+#
+# 部署前准备:
+#   1. 生成高强度随机密钥替换 ENCRYPTION_KEY（生成后不可更改！）
+#      生成命令: openssl rand -base64 32
+#   2. 数据持久化在 ./data
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:6989
+# ============================================================
+
+name: nexterm
+
+services:
+  nexterm:
+    image: germannewsmaker/nexterm:latest
+    container_name: nexterm
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "6989:6989"
+
+    volumes:
+      - ./data:/app/data
+
+    environment:
+      TZ: Asia/Shanghai
+      # 加密密钥 — 替换为高强度随机字符串，生成后不可更改
+      ENCRYPTION_KEY: "替换为长期固定的高强度随机密钥"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 30s

@@ -1,0 +1,52 @@
+# ============================================================
+# SiYuan（思源笔记）— 本地优先的个人知识管理系统
+# 支持 Markdown 所见即所得、双向链接、块级引用
+#
+# 部署前准备:
+#   1. 设置 accessAuthCode（访问口令，首次启动后也可在 conf.json 中修改）
+#   2. 数据持久化在 ./workspace，务必定期备份
+#   3. PUID/PGID 建议设为实际用户 ID（避免文件权限问题）
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:6806
+# ============================================================
+
+name: siyuan
+
+services:
+  siyuan:
+    image: b3log/siyuan:latest
+    container_name: siyuan
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    command:
+      - --workspace=/siyuan/workspace/
+      # 访问口令 — 替换为实际值，首次启动后可在工作空间/conf/conf.json 中修改
+      - --accessAuthCode=替换为实际访问口令
+
+    ports:
+      - "6806:6806"
+
+    volumes:
+      - ./workspace:/siyuan/workspace
+
+    environment:
+      TZ: Asia/Shanghai
+      PUID: "1001"
+      PGID: "1001"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 30s

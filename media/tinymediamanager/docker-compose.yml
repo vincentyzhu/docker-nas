@@ -1,0 +1,50 @@
+# ============================================================
+# TinyMediaManager — 媒体库管理工具
+# 电影/电视剧元数据刮削、重命名、海报管理
+#
+# 部署前准备:
+#   1. 将实际媒体文件目录挂载到 /media（替换下方 ./media）
+#   2. 如需修改媒体文件所有者，设置 USER_ID/GROUP_ID 为实际 UID
+#   3. 数据持久化在 ./data（含数据库和配置）
+#   4. 处理大媒体库时需较长时间，stop_grace_period 设为 60s
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:4000
+# ============================================================
+
+name: tinymediamanager
+
+services:
+  tinymediamanager:
+    image: tinymediamanager/tinymediamanager:latest
+    container_name: tinymediamanager
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    environment:
+      USER_ID: "0"
+      GROUP_ID: "0"
+      TZ: Asia/Shanghai
+      # ALLOW_DIRECT_VNC: "true"
+      # LC_ALL: en_US.UTF-8
+      # LANG: en_US.UTF-8
+      # PASSWORD: "..."
+
+    volumes:
+      - ./data:/data
+      # 根据实际需要挂载资源所在文件夹到/media
+      - ./media:/media
+    ports:
+      - "4000:4000"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    stop_grace_period: 60s

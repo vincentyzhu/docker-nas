@@ -1,0 +1,155 @@
+# ============================================================
+# Frigate — 本地 AI 视频监控 NVR（含 MQTT + 钉钉通知）
+#
+# 本 compose 包含三个服务:
+#   frigate        — AI 视频监控核心（检测/录像/推流）
+#   mosquitto      — MQTT 消息代理（Frigate 事件总线）
+#   frigate-notify — 钉钉告警通知（监听 MQTT 事件）
+#
+# 硬件要求:
+#   - Intel 核显 (Quick Sync) 用于 AI 推理加速
+#   - 摄像头需支持 RTSP 协议
+#
+# 部署前准备:
+#   1. 在 ./config/config.yml 中配置摄像头 RTSP 地址
+#   2. 在下方 frigate-notify 环境变量中填写钉钉机器人 Webhook 和密钥
+#   3. 确保 /dev/dri/renderD128 设备存在（核显直通），否则删除 devices 和 privileged
+#   4. 所有服务在 docker bridge 网络内通过容器名通信，无需暴露端口到宿主机
+#
+# 端口说明:
+#   8971 — Frigate Web UI
+#   5000 — Frigate 推流/API
+#   8554 — go2rtc WebRTC
+#   8555 — go2rtc 信令
+#
+# 启动:      docker compose up -d（自动按 mosquitto → frigate → notify 顺序启动）
+# 访问:      http://host:8971
+# ============================================================
+
+name: frigate
+
+services:
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:0.17.2
+    container_name: frigate
+    network_mode: bridge
+    restart: unless-stopped
+    privileged: true
+    stop_grace_period: 30s
+    shm_size: "512mb"
+
+    depends_on:
+      - mosquitto
+
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+
+    ports:
+      - "8971:8971"
+      - "5000:5000"
+      # go2rtc
+      - "8554:8554"
+      - "8555:8555/tcp"
+      - "8555:8555/udp"
+
+    environment:
+      TZ: Asia/Shanghai
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 512
+
+    volumes:
+      # 宿主机时区文件（Asia/Shanghai），确保容器时间与宿主机一致
+      - ./localtime:/etc/localtime:ro
+      - ./config:/config
+      # 录像存储目录 — 挂载实际存储路径
+      - ./storage:/media/frigate
+      # 缓存目录
+    tmpfs:
+      - /tmp/cache:size=1000000000
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "1883:1883"
+
+    environment:
+      TZ: Asia/Shanghai
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s
+
+    volumes:
+      - ./mqtt/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mqtt/data:/mosquitto/data
+
+  frigate-notify:
+    image: python:3.12-alpine
+    container_name: frigate-notify
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+    working_dir: /app
+
+    depends_on:
+      - mosquitto
+      - frigate
+
+    command: sh -c "pip install -q -r requirements.txt && python notify.py"
+
+    environment:
+      TZ: Asia/Shanghai
+      # 填写 mosquittoIP 地址
+      MQTT_HOST: ""
+      MQTT_PORT: "1883"
+      MQTT_TOPIC: "frigate/events"
+      # 钉钉机器人 Webhook — 替换为实际地址
+      DINGTALK_WEBHOOK: ""
+      # 钉钉机器人加签密钥 — 替换为实际值（未设置加签则留空）
+      DINGTALK_SECRET: ""
+      # Frigate API 地址 — 同一 compose 内用容器名
+      FRIGATE_URL: "http://frigate:5000"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 128m
+    cpus: 0.3
+    pids_limit: 64
+    stop_grace_period: 30s
+
+    volumes:
+      - ./notify/requirements.txt:/app/requirements.txt:ro
+      - ./notify/notify.py:/app/notify.py:ro

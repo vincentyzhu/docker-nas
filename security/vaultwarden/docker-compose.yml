@@ -1,0 +1,64 @@
+# ============================================================
+# Vaultwarden — 自托管密码管理器 (Bitwarden 兼容)
+# 存储所有账号密码、信用卡、笔记等敏感信息
+#
+# 部署前准备:
+#   1. 填写 DOMAIN（nginx 反代的 HTTPS 域名，例如 https://vw.example.com）
+#   2. 填写 SMTP 邮箱信息（用于发送注册邀请邮件）
+#   3. 首次启动后建议关闭注册：SIGNUPS_ALLOWED=false
+#   4. 数据持久化在 ./data，务必定期备份！
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:80（应通过 nginx HTTPS 反代访问）
+# ============================================================
+
+name: vaultwarden
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "80:80"
+
+    environment:
+      # 必须填写实际访问地址，且与 Nginx HTTPS 域名完全一致
+      # 例如: https://vaultwarden.example.com
+      DOMAIN: ""
+
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "true"
+      SHOW_PASSWORD_HINT: "false"
+
+      SMTP_HOST: "smtp.qq.com"
+      SMTP_PORT: "587"
+      SMTP_SECURITY: "starttls"
+      # 发件人邮箱地址，替换为实际值
+      SMTP_FROM: ""
+      # SMTP 登录账号，替换为实际值
+      SMTP_USERNAME: ""
+      # SMTP 授权码（非邮箱密码），替换为实际值
+      SMTP_PASSWORD: ""
+
+    volumes:
+      - ./data:/data
+      # 宿主机时区文件（Asia/Shanghai），确保容器时间与宿主机一致
+      - ./localtime:/etc/localtime:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 30s

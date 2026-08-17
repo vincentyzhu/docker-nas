@@ -1,0 +1,43 @@
+# ============================================================
+# sun-panel — NAS 服务导航面板
+# 统一入口管理所有自部署服务，支持 Docker 容器管理
+#
+# 部署前准备: 无需额外配置
+# 挂载了 docker.sock 用于容器管理功能
+# 启动:      docker compose up -d
+# 访问:      http://host:3002
+# ============================================================
+
+name: sun-panel
+
+services:
+  sun-panel:
+    image: hslr/sun-panel:1.8.1
+    container_name: sun-panel
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    volumes:
+      - ./conf:/app/conf
+      # 用于 Sun Panel 的 Docker 容器管理功能
+      - /var/run/docker.sock:/var/run/docker.sock
+      # - ./runtime:/app/runtime # 挂载日志目录
+      # - /mnt/sata1-1:/os # 硬盘挂载点（根据自己需求修改）
+
+    ports:
+      - "3002:3002"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s

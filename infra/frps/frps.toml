@@ -1,0 +1,35 @@
+# ============================================================
+# frps 服务端配置
+# 敏感值需替换为实际值，并与 frpc 客户端保持一致
+# ============================================================
+
+# frpc 客户端连接端口
+bindPort = 6111
+
+# 认证令牌 — 替换为实际值，frpc 客户端需配置相同 token
+auth.method = "token"
+auth.token = ""
+
+# 强制 TLS 加密传输
+transport.tls.force = true
+transport.maxPoolCount = 10
+
+# 单个 frpc 客户端最多可穿透的端口数
+maxPortsPerClient = 100
+
+# 允许 frpc 穿透的端口范围 — 按需取消注释并填写实际区间
+# allowPorts = [
+#   { start = 6000, end = 6300 }
+# ]
+
+# Web 面板仅监听本机，由 Nginx 反代对外
+webServer.addr = "127.0.0.1"
+webServer.port = 6001
+# 面板登录账号 — 替换为实际值
+webServer.user = ""
+webServer.password = ""
+
+# 日志输出到 docker logs，由 Compose 的 json-file 策略轮转
+log.to = "console"
+log.level = "warn"
+log.disablePrintColor = true

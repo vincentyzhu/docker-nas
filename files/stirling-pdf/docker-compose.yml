@@ -1,0 +1,54 @@
+# ============================================================
+# Stirling PDF — 全能 PDF 处理工具
+# 合并/拆分/压缩/OCR/转换/签名等 50+ 种 PDF 操作
+#
+# 部署前准备:
+#   - 首次启动会自动创建 ./trainingData 等目录
+#   - 使用 latest-fat 镜像以支持完整功能（含 OCR）
+#   - 如需登录保护，将 SECURITY_ENABLELOGIN 设为 true
+#   - 资源占用较高，已分配 2GB 内存
+# 启动:      docker compose up -d
+# 访问:      http://host:8080
+# ============================================================
+
+name: stirling-pdf
+
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest-fat
+    container_name: stirling-pdf
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./trainingData:/usr/share/tessdata
+      - ./extraConfigs:/configs
+      - ./customFiles:/customFiles
+      - ./logs:/logs
+      - ./pipeline:/pipeline
+
+    environment:
+      DISABLE_ADDITIONAL_FEATURES: "false"
+      SECURITY_ENABLELOGIN: "false"
+      LANGS: zh_CN
+      PUID: "1001"
+      PGID: "1001"
+      JAVA_TOOL_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:MaxRAMPercentage=75"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 512
+    stop_grace_period: 60s

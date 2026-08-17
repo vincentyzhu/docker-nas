@@ -1,0 +1,55 @@
+# ============================================================
+# qBittorrent — BT/PT 下载客户端
+# 支持 Web UI 管理、RSS 订阅、分类标签
+#
+# 部署前准备:
+#   - 首次启动后 Web UI 默认账号 admin，临时密码见容器日志
+#   - 下载目录 ./downloads 会自动创建
+#   - WEBUI_PORT 设为 8080 供 nginx 反代
+#   - BT 端口 6881 需在路由器/防火墙放行 TCP+UDP
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:8080
+# ============================================================
+
+name: qbittorrent
+
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    environment:
+      PUID: "0"
+      PGID: "0"
+      TZ: Asia/Shanghai
+      WEBUI_PORT: "8080"
+      TORRENTING_PORT: "6881"
+
+    volumes:
+      - ./config:/config
+      - ./downloads:/downloads
+
+    ports:
+      # Web UI，供本地 Nginx HTTPS 反代
+      - "8080:8080"
+      # BT 入站端口，必须保留 TCP 与 UDP
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 60s

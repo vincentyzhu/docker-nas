@@ -1,0 +1,31 @@
+# ============================================================
+# frpc 客户端配置（官方初始化模板）
+# 作用：将内网服务端口穿透到公网 frps 服务器
+#
+# 部署前替换：
+#   - serverAddr → 公网服务器 IP 或域名
+#   - auth.token → 与 frps.toml 的 auth.token 保持一致
+# ============================================================
+
+# 公网 frps 服务器地址 — 替换为实际 IP 或域名
+serverAddr = "x.x.x.x"
+# frps 的 bindPort 端口（与 frps.toml 的 bindPort 一致）
+serverPort = 6111
+
+# 认证令牌 — 与 frps.toml 的 auth.token 保持一致
+auth.method = "token"
+auth.token = ""
+
+# 日志输出到 docker logs，由 Compose 的 json-file 策略轮转
+log.to = "console"
+log.level = "info"
+log.maxDays = 3
+
+# 代理规则示例：将内网 80 端口穿透到公网 6000
+# 每个需要穿透的服务，添加一个 [[proxies]] 段
+[[proxies]]
+name = "example"          # 代理名称（自定义，全局唯一）
+type = "tcp"              # 代理类型：tcp / udp / http / https
+localIP = "127.0.0.1"     # 内网服务 IP（本机用 127.0.0.1）
+localPort = 80            # 内网服务端口
+remotePort = 6000         # 公网映射端口（需在 frps 的 allowPorts 范围内）

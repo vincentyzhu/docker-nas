@@ -1,0 +1,35 @@
+# ============================================================
+# image-watermark-tool — 在线图片水印工具
+# 支持添加文字/图片水印，批量处理
+#
+# 部署前准备: 无需额外配置
+# 启动:      docker compose up -d
+# 访问:      http://host:3000
+# ============================================================
+
+name: image-watermark-tool
+
+services:
+  image-watermark-tool:
+    image: ghcr.io/chung1912/image-watermark-tool:master
+    container_name: image-watermark-tool
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "3000:3000"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 15s

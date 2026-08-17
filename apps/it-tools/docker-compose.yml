@@ -1,0 +1,35 @@
+# ============================================================
+# it-tools — 开发者常用工具集
+# 包含 JSON/YAML 格式化、Base64、UUID 生成、加密工具等
+#
+# 部署前准备: 无需额外配置
+# 启动:      docker compose up -d
+# 访问:      http://host:80
+# ============================================================
+
+name: it-tools
+
+services:
+  it-tools:
+    image: corentinth/it-tools:latest
+    container_name: it-tools
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "80:80"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 15s

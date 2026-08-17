@@ -1,0 +1,35 @@
+# ============================================================
+# morphos-server — 在线文件格式转换服务
+# 支持多种文件格式互转，纯浏览器端处理
+#
+# 部署前准备: 无需额外配置
+# 启动:      docker compose up -d
+# 访问:      http://host:8080
+# ============================================================
+
+name: morphos-server
+
+services:
+  morphos-server:
+    image: ghcr.io/danvergara/morphos-server:latest
+    container_name: morphos-server
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "8080:8080"
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 30s

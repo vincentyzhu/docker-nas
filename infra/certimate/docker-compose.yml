@@ -1,0 +1,43 @@
+# ============================================================
+# certimate — SSL 证书自动管理
+# 自动申请、续期、部署免费 SSL 证书（支持 Let's Encrypt 等）
+#
+# 部署前准备:
+#   - 首次启动后通过 Web UI 配置 DNS 服务商 API 密钥
+#   - 数据持久化在 ./pb_data，请勿手动删除
+# 启动:      docker compose up -d
+# 访问:      http://host:8090
+# ============================================================
+
+name: certimate
+
+services:
+  certimate:
+    image: certimate/certimate:latest
+    container_name: certimate
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "8090:8090"
+
+    volumes:
+      # 不要把整个 Compose 目录作为应用数据目录挂载
+      - ./pb_data:/app/pb_data
+      # 宿主机时区文件（Asia/Shanghai），确保容器时间与宿主机一致
+      - ./localtime:/etc/localtime:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 256
+    stop_grace_period: 30s

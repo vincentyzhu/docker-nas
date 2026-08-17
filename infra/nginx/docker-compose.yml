@@ -1,0 +1,52 @@
+# ============================================================
+# nginx — 反向代理服务器
+# 作为所有 NAS 服务的统一入口，对外提供 HTTPS 访问
+# 通过 host.docker.internal 代理其他 bridge 模式容器
+#
+# 部署前准备:
+#   1. 将 SSL 证书和 nginx 配置文件准备好
+#   2. 将实际 nginx.conf 放入当前目录（覆盖占位文件）
+#   3. nginx.conf 中引用其他服务时使用 host.docker.internal:<端口>
+#   4. 证书路径在 nginx.conf 中配置，可挂载到容器
+#
+# 端口说明:
+#   443 — HTTPS 入口
+#   80  — HTTP 入口（建议 301 跳转到 443）
+#
+# 启动:      docker compose up -d
+# ============================================================
+
+name: nginx
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    # 让 Nginx 可通过宿主机已发布端口访问其他默认 bridge 容器
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    ports:
+      - "443:443"
+      - "80:80"
+
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s

@@ -1,0 +1,45 @@
+# ============================================================
+# frpc — FRP 内网穿透客户端
+# 将内网服务端口穿透到公网 FRP 服务器，实现外网访问
+#
+# 部署前准备:
+#   1. 将实际 frpc.toml 放入当前目录（覆盖占位文件）
+#   2. frpc.toml 中配置公网 FRP 服务器地址、端口、密钥
+#   3. 每个需要穿透的服务在 frpc.toml 中添加一个 proxy 配置
+#
+# 注意: 使用 host 网络模式以直接访问宿主机端口
+# 启动:      docker compose up -d
+# ============================================================
+
+name: frpc
+
+services:
+  frpc:
+    image: fatedier/frpc:latest
+    container_name: frpc
+    restart: unless-stopped
+    init: true
+
+    # 直接使用 NAS 宿主机网络
+    network_mode: host
+
+    volumes:
+      - ./frpc.toml:/etc/frp/frpc.toml:ro
+
+    command:
+      - -c
+      - /etc/frp/frpc.toml
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s
