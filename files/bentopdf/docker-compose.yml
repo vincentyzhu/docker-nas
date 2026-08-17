@@ -11,7 +11,7 @@ name: bentopdf
 
 services:
   bentopdf:
-    image: bentopdf/bentopdf:latest
+    image: bentopdfteam/bentopdf:latest
     container_name: bentopdf
     network_mode: bridge
     restart: unless-stopped
