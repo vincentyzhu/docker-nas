@@ -5,7 +5,8 @@
 **/store/*
 **/workspace/*
 **/pb_data/*
-**/media/*
+# 仅忽略各服务目录中的媒体数据，不能匹配根目录 media/ 分类
+*/*/media/*
 **/storage/*
 !**/.gitkeep
 

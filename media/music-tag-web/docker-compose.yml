@@ -1,0 +1,50 @@
+# ============================================================
+# Music Tag Web V2 — 中文音乐库刮削与播放工具
+# 支持音乐元数据刮削、封面管理与 Web 播放
+#
+# 部署前准备:
+#   1. 音乐库默认挂载 ./media；生产环境请改为实际音乐库的绝对路径
+#   2. 配置与数据库保存在 ./config，升级前请做好备份
+#   3. 如需自动刮削新歌，可按需挂载下载目录到 /app/download
+#
+# 启动:      docker compose up -d
+# 访问:      http://host:8002
+# ============================================================
+
+name: music-tag-web
+
+services:
+  music-tag-web:
+    image: xhongc/music_tag_web:latest
+    container_name: music-tag-web
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "8002:8002"
+
+    volumes:
+      # 配置、数据库等运行时数据
+      - ./config:/app/data
+      # 默认媒体目录；请改为实际音乐库的绝对路径，例如 /volume2/music:/app/media:rw
+      - ./media:/app/media:rw
+      # 可选：后台自动刮削的监控目录
+      # - /你的下载目录:/app/download:rw
+
+    environment:
+      TZ: Asia/Shanghai
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 512
+    stop_grace_period: 30s
