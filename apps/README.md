@@ -8,5 +8,3 @@
 | drawdb | 数据库关系图编辑器 |
 | drawnix | 白板 + 思维导图 |
 | siyuan | 思源笔记 |
-| it-tools | 开发者常用工具集 |
-| omni-tools | 全能工具集 |
