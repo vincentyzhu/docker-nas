@@ -1,0 +1,50 @@
+# ============================================================
+# WebDAV — 文件访问与同步服务
+#
+# 部署前准备:
+#   1. 修改 config.yml 中的账号和密码占位符
+#   2. 默认数据目录为 ./data；如需使用已有目录，改为实际绝对路径
+#   3. 默认端口为 6065；NAS 部署时请按端口表修改宿主机侧端口，
+#      并同步修改内网 Nginx 的 proxy_pass 端口
+#
+# 启动:      docker compose up -d
+# 访问:      https://webdav.example.com
+# ============================================================
+
+name: webdav
+
+services:
+  webdav:
+    image: hacdias/webdav:latest
+    container_name: webdav
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "6065:6065"
+
+    command: -c /config.yml
+
+    volumes:
+      # WebDAV 文件数据
+      - ./data:/data
+      # 服务配置；复制到 NAS 后填写实际账号与密码
+      - ./config.yml:/config.yml:ro
+
+    environment:
+      TZ: Asia/Shanghai
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    stop_grace_period: 30s

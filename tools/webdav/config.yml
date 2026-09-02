@@ -1,0 +1,23 @@
+# ============================================================
+# WebDAV 服务配置
+#
+# 本文件可提交 GitHub；复制到 NAS 后，请替换账号和密码占位符。
+# HTTPS 由 Nginx 负责，本服务仅提供内网 HTTP。
+# ============================================================
+
+address: 0.0.0.0
+port: 6065
+
+tls: false
+behindProxy: true
+
+# 容器内的 WebDAV 数据目录
+directory: /data
+
+# 未单独指定用户权限时的默认权限：只读
+permissions: R
+
+users:
+  - username: "请填写你的WebDAV用户名"
+    password: "请填写高强度密码"
+    permissions: CRUD
