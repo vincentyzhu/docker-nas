@@ -8,6 +8,7 @@
 #   2. 将实际 nginx.conf 放入当前目录（覆盖占位文件）
 #   3. nginx.conf 中引用其他服务时使用 host.docker.internal:<端口>
 #   4. 证书路径在 nginx.conf 中配置，可挂载到容器
+#   5. Nginx 日志默认保存到 ./logs，由 nginx-logrotate 每天轮转
 #
 # 端口说明:
 #   443 — HTTPS 入口
@@ -36,6 +37,8 @@ services:
 
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # 访问日志和错误日志；日志内容由 .gitignore 忽略
+      - ./logs:/var/log/nginx
 
     security_opt:
       - no-new-privileges:true
@@ -50,3 +53,44 @@ services:
     cpus: 0.5
     pids_limit: 128
     stop_grace_period: 30s
+
+  # 定期轮转 ./logs 中的 Nginx 日志，状态使用命名卷持久化
+  nginx-logrotate:
+    image: blacklabelops/logrotate:latest
+    container_name: nginx-logrotate
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    environment:
+      TZ: Asia/Shanghai
+      LOGS_DIRECTORIES: /logs
+      # 默认每天轮转，保留 14 份压缩日志
+      LOGROTATE_INTERVAL: daily
+      LOGROTATE_COPIES: "14"
+      LOGROTATE_COMPRESSION: compress
+      LOGROTATE_DATEFORMAT: "-%Y%m%d"
+      LOGROTATE_MODE: copytruncate
+      # 如要按 20M 大小轮转：注释掉 LOGROTATE_INTERVAL 后再取消下一行注释。
+      # LOGROTATE_SIZE: "20M"
+      LOGROTATE_STATUSFILE: /logrotate-status/logrotate.status
+
+    volumes:
+      - ./logs:/logs
+      - nginx-logrotate-state:/logrotate-status
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+    mem_limit: 64m
+    cpus: 0.1
+    pids_limit: 32
+
+volumes:
+  nginx-logrotate-state:
