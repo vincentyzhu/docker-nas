@@ -13,7 +13,7 @@ name: certimate
 
 services:
   certimate:
-    image: certimate/certimate:latest
+    image: certimate/certimate:v0.4
     container_name: certimate
     network_mode: bridge
     restart: unless-stopped
@@ -25,7 +25,7 @@ services:
     volumes:
       # 不要把整个 Compose 目录作为应用数据目录挂载
       - ./pb_data:/app/pb_data
-      # 宿主机时区文件（Asia/Shanghai），确保容器时间与宿主机一致
+      # 随模板附带的 Asia/Shanghai 时区文件
       - ./localtime:/etc/localtime:ro
 
     security_opt:

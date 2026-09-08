@@ -7,6 +7,7 @@
 #   2. 如需修改媒体文件所有者，设置 USER_ID/GROUP_ID 为实际 UID
 #   3. 数据持久化在 ./data（含数据库和配置）
 #   4. 处理大媒体库时需较长时间，stop_grace_period 设为 60s
+#   5. 媒体库规模差异较大，模板不设硬性 CPU/内存上限，可按 NAS 性能自行添加
 #
 # 启动:      docker compose up -d
 # 访问:      http://host:4000

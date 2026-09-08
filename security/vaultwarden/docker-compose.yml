@@ -3,8 +3,8 @@
 # 存储所有账号密码、信用卡、笔记等敏感信息
 #
 # 部署前准备:
-#   1. 填写 DOMAIN（nginx 反代的 HTTPS 域名，例如 https://vw.example.com）
-#   2. 填写 SMTP 邮箱信息（用于发送注册邀请邮件）
+#   1. 复制 .env.example 为 .env，填写 DOMAIN 和 SMTP 信息
+#   2. DOMAIN 必须与 Nginx 反代的 HTTPS 域名完全一致
 #   3. 首次启动后建议关闭注册：SIGNUPS_ALLOWED=false
 #   4. 数据持久化在 ./data，务必定期备份！
 #
@@ -28,7 +28,7 @@ services:
     environment:
       # 必须填写实际访问地址，且与 Nginx HTTPS 域名完全一致
       # 例如: https://vaultwarden.example.com
-      DOMAIN: ""
+      DOMAIN: "${VAULTWARDEN_DOMAIN:?请复制 .env.example 为 .env 并填写 VAULTWARDEN_DOMAIN}"
 
       SIGNUPS_ALLOWED: "false"
       INVITATIONS_ALLOWED: "true"
@@ -38,15 +38,15 @@ services:
       SMTP_PORT: "587"
       SMTP_SECURITY: "starttls"
       # 发件人邮箱地址，替换为实际值
-      SMTP_FROM: ""
+      SMTP_FROM: "${VAULTWARDEN_SMTP_FROM:?请填写 VAULTWARDEN_SMTP_FROM}"
       # SMTP 登录账号，替换为实际值
-      SMTP_USERNAME: ""
+      SMTP_USERNAME: "${VAULTWARDEN_SMTP_USERNAME:?请填写 VAULTWARDEN_SMTP_USERNAME}"
       # SMTP 授权码（非邮箱密码），替换为实际值
-      SMTP_PASSWORD: ""
+      SMTP_PASSWORD: "${VAULTWARDEN_SMTP_PASSWORD:?请填写 VAULTWARDEN_SMTP_PASSWORD}"
 
     volumes:
       - ./data:/data
-      # 宿主机时区文件（Asia/Shanghai），确保容器时间与宿主机一致
+      # 随模板附带的 Asia/Shanghai 时区文件
       - ./localtime:/etc/localtime:ro
 
     security_opt:

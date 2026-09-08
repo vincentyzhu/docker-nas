@@ -15,7 +15,7 @@ name: webdav
 
 services:
   webdav:
-    image: hacdias/webdav:latest
+    image: hacdias/webdav:v5
     container_name: webdav
     network_mode: bridge
     restart: unless-stopped

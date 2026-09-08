@@ -3,9 +3,9 @@
 # 接收内网 frpc 客户端的穿透请求，对外提供端口映射
 #
 # 部署前准备:
-#   1. 填写 frps.toml 中的 auth.token（与 frpc 客户端保持一致）
-#   2. 填写 allowPorts 端口范围（允许 frpc 穿透的端口区间）
-#   3. 填写 webServer.user / password（面板登录凭证）
+#   1. 复制 .env.example 为 .env，填写 Token 和面板登录凭证
+#   2. 按需修改 frps.toml 中的 allowPorts 端口范围
+#   3. FRPS_TOKEN 必须与 frpc 客户端保持一致
 #
 # 注意: 使用 host 网络模式，直接监听宿主机端口
 #   - bindPort 6111: frpc 客户端连接端口
@@ -18,11 +18,17 @@ name: frps
 
 services:
   frps:
-    image: fatedier/frps:latest
+    # Docker Hub 仓库没有 latest 标签，客户端和服务端保持相同版本。
+    image: fatedier/frps:v0.71.0
     container_name: frps
     network_mode: host
     restart: unless-stopped
     init: true
+
+    environment:
+      FRPS_TOKEN: "${FRPS_TOKEN:?请复制 .env.example 为 .env 并填写 FRPS_TOKEN}"
+      FRPS_DASHBOARD_USER: "${FRPS_DASHBOARD_USER:?请填写 FRPS_DASHBOARD_USER}"
+      FRPS_DASHBOARD_PASSWORD: "${FRPS_DASHBOARD_PASSWORD:?请填写 FRPS_DASHBOARD_PASSWORD}"
 
     volumes:
       - ./frps.toml:/etc/frp/frps.toml:ro

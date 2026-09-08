@@ -22,7 +22,7 @@ name: rustdesk-server
 
 services:
   hbbs:
-    image: rustdesk/rustdesk-server:1.1.16
+    image: rustdesk/rustdesk-server:1
     container_name: hbbs
     network_mode: host
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
     stop_grace_period: 30s
 
   hbbr:
-    image: rustdesk/rustdesk-server:1.1.16
+    image: rustdesk/rustdesk-server:1
     container_name: hbbr
     network_mode: host
     restart: unless-stopped

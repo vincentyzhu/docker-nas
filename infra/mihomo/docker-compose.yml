@@ -5,7 +5,7 @@
 #
 # 部署前准备:
 #   1. 将 mihomo 配置文件放入 ./config/ 目录
-#   2. 填写下方 DEFAULT_BACKEND_URL（mihomo API 地址）
+#   2. 将下方 DEFAULT_BACKEND_URL 中的 NAS_IP 替换为 NAS 局域网 IP
 #   3. 两个容器共享同一个 x-common 配置块
 #
 # 端口说明:
@@ -59,8 +59,8 @@ services:
       - "80:80"
     environment:
       TZ: Asia/Shanghai
-      # mihomo API 地址 — 替换为实际值，例如 http://mihomo:9090
-      DEFAULT_BACKEND_URL: 
+      # 默认 bridge 网络不解析容器名，通过宿主机发布端口访问 mihomo API
+      DEFAULT_BACKEND_URL: "http://NAS_IP:9090"
     security_opt:
       - no-new-privileges:true
     mem_limit: 64m
