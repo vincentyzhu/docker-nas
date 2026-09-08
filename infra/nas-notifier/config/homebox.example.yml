@@ -1,0 +1,26 @@
+# 复制为 homebox.yml 后填写真实信息。
+notifier:
+  type: homebox
+  timezone: Asia/Shanghai
+
+schedule:
+  notify_time: "08:00"
+  run_on_start: false
+  send_empty: false
+
+dingtalk:
+  webhook: "CHANGE-ME-DINGTALK-WEBHOOK"
+  secret: ""
+
+http:
+  timeout_seconds: 20
+  retry_attempts: 3
+  retry_delay_seconds: 10
+
+source:
+  api_url: "http://NAS_IP:7745"
+  web_url: "https://homebox.example.com"
+  # 在 Homebox 的“个人资料 -> API Keys”中创建，不是登录密码。
+  api_key: "CHANGE-ME-HOMEBOX-API-KEY"
+  # 今天到期以及未来多少天内到期的物品会被推送；已过保物品不推送。
+  remind_days: 30
