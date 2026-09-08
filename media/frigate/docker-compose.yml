@@ -17,7 +17,6 @@
 #   4. 默认 bridge 网络不能使用 Compose 服务名解析，通知容器通过 NAS_IP:1883 访问 MQTT
 #
 # 安全提醒: 当前 Mosquitto 允许匿名访问，仅应在可信局域网使用，不要映射到公网。
-# MQTT 账号、ACL 和 Frigate 截图通知将在后续版本完善。
 #
 # 端口说明:
 #   8971 — Frigate Web UI

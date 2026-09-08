@@ -83,12 +83,6 @@ docker compose up -d
 - `.env`、真实通知配置、证书和私钥已通过 `.gitignore` 排除；提交前仍应检查 `git diff`
 - 部分服务需要挂载 `docker.sock` 或硬件直通，部署前请先阅读对应 compose 文件的头部注释
 - 运行时产生的数据目录已在 `.gitignore` 中排除，不会随仓库提交
-- 镜像默认使用 `latest`；执行 `docker compose pull` 或 `docker compose up -d --pull always` 时才会获取新镜像，请自行决定更新时机
+- 镜像标签按服务特点选择 `latest`、主版本或固定版本；升级前请阅读对应服务的发行说明
 - 服务默认端口可能重复；只部署需要的服务即可，同时运行端口重复的服务时请自行调整端口映射
-
-## 暂缓事项
-
-- Frigate 通知附带事件截图
-- Mosquitto 用户认证和 ACL
-
-当前 Mosquitto 匿名端口只适合可信局域网，不应通过 FRP、Nginx 或公网防火墙对外开放。
+- Frigate 模板中的 Mosquitto 允许匿名访问，只适合可信局域网，不应通过 FRP、Nginx 或公网防火墙对外开放

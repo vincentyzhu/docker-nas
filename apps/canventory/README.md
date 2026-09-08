@@ -2,13 +2,11 @@
 
 Canventory 冰箱库存部署模板，并通过通用 `nas-notifier` 容器发送钉钉临期提醒。
 
-本模板暂时使用官方镜像：
+本模板使用 Canventory 官方镜像：
 
 ```yaml
 image: elthamini/canventory:latest
 ```
-
-官方镜像不包含中文界面、数量单位和按保质期天数换算到期日期的二次开发。后续发布自定义镜像时，只需替换 Compose 中的镜像地址，现有 `./data` 数据目录可以继续挂载使用。
 
 部署前编辑：
 
@@ -19,7 +17,13 @@ image: elthamini/canventory:latest
 
 通知默认每天 `08:00` 检查，容器重启不立即推送，没有临期物品时保持安静。
 
-离线导入通用通知镜像时，将通知服务的镜像改为：
+通知服务默认直接从 GHCR 拉取：
+
+```yaml
+image: ghcr.io/vincentyzhu/nas-notifier:latest
+```
+
+无法访问 GHCR 时，可在其他电脑构建并离线导入镜像，然后将通知服务的镜像改为：
 
 ```yaml
 image: nas-notifier:local

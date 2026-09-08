@@ -29,8 +29,7 @@ image: nas-notifier:local
 一个容器实例只运行一种通知类型。三个服务共用同一个 `nas-notifier` 镜像，但分别挂载 `canventory.yml`、`homebox.yml`、`frigate.yml`。
 
 - Canventory/Homebox：每天指定时间检查；默认每天 `08:00`，重启不推送。
-- Frigate：持续监听 MQTT；启动不推送；默认冷却时间为 `0`，每个符合条件的 `new` 事件都推送。
-- 当前 Frigate 仅发送文字和网页入口，暂不附带截图。
+- Frigate：持续监听 MQTT；启动不推送；默认冷却时间为 `0`，每个符合条件的 `new` 事件都推送，通知包含事件文字和 Frigate 网页入口。
 
 ## 本机构建
 
