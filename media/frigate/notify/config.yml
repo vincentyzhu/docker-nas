@@ -1,0 +1,47 @@
+# Frigate 通知公开模板。部署前替换所有 CHANGE-ME、NAS_IP 和示例域名。
+notifier:
+  type: frigate
+  timezone: Asia/Shanghai
+
+dingtalk:
+  webhook: "CHANGE-ME-DINGTALK-WEBHOOK"
+  # 机器人未启用加签时留空。
+  secret: ""
+
+http:
+  timeout_seconds: 20
+  retry_attempts: 3
+  retry_delay_seconds: 10
+
+source:
+  # 仅用于通知中的“查看实时画面”链接，可填写公网 HTTPS 域名。
+  web_url: "https://frigate.example.com"
+  # 空列表表示全部摄像头；填写内部摄像头名称可限定范围。
+  watch_cameras: []
+  # 仅推送以下检测类型。
+  watch_labels:
+    - person
+    - car
+    - dog
+    - cat
+  event_types:
+    - new
+  # 0 表示每个符合条件的新事件都推送，不启用冷却。
+  cooldown_seconds: 0
+  camera_names: {}
+  # 通知中显示的中文名称映射。
+  label_names:
+    person: 人员
+    car: 车辆
+    dog: 狗
+    cat: 猫
+  mqtt:
+    # 默认 bridge 网络不提供 Compose 服务名解析，通过 NAS 映射端口访问。
+    host: "NAS_IP"
+    port: 1883
+    topic_prefix: frigate
+    client_id: nas-notifier-frigate
+    username: ""
+    password: ""
+    tls: false
+    keepalive: 60

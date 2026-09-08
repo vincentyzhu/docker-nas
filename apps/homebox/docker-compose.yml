@@ -1,0 +1,81 @@
+# ============================================================
+# Homebox — 家庭物品与质保管理（含钉钉即将过保提醒）
+#
+# 部署前：
+#   1. 修改 HBOX_AUTH_API_KEY_PEPPER，并保持投入使用后的值不变
+#   2. 在 Homebox 中创建 API Key
+#   3. 编辑 ./notify/config.yml 中的 NAS_IP、API Key 和钉钉机器人配置
+#   4. 通知只包含今天和未来提醒窗口内到期的物品，不包含已经过保的物品
+#
+# 端口：7745 — Homebox Web UI/API（公开模板使用默认端口直接映射）
+# ============================================================
+
+name: homebox
+
+services:
+  homebox:
+    image: ghcr.io/sysadminsmedia/homebox:latest
+    container_name: homebox
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "7745:7745"
+
+    environment:
+      TZ: Asia/Shanghai
+      HBOX_LOG_LEVEL: info
+      # 必填：至少 32 个字符；可执行 openssl rand -base64 48 生成。
+      # 投入使用后不要修改，否则已经创建的 API Key 会失效。
+      HBOX_AUTH_API_KEY_PEPPER: "CHANGE-ME-RANDOM-STRING-AT-LEAST-32-CHARS"
+
+    volumes:
+      # Homebox 数据与上传图片均在此目录，必须纳入备份。
+      - ./data:/data
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
+    stop_grace_period: 30s
+
+  notify:
+    # 若已离线导入镜像，可改为 nas-notifier:local。
+    image: ghcr.io/vincentyzhu/nas-notifier:latest
+    container_name: homebox-notify
+    network_mode: bridge
+    restart: unless-stopped
+    init: true
+
+    depends_on:
+      - homebox
+
+    environment:
+      CONFIG_FILE: /config/config.yml
+
+    volumes:
+      # 必须预先存在且是文件，否则部分 Docker 管理界面会创建成目录。
+      - ./notify/config.yml:/config/config.yml:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+    mem_limit: 128m
+    cpus: 0.3
+    pids_limit: 64
+    stop_grace_period: 30s

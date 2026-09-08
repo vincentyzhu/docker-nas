@@ -1,0 +1,30 @@
+# Canventory 通知公开模板。部署前替换所有 CHANGE-ME 和 NAS_IP。
+notifier:
+  type: canventory
+  timezone: Asia/Shanghai
+
+schedule:
+  # 每天执行时间，24 小时制。
+  notify_time: "08:00"
+  # 默认重启不立即检查，无临期物品时不推送。
+  run_on_start: false
+  send_empty: false
+
+dingtalk:
+  webhook: "CHANGE-ME-DINGTALK-WEBHOOK"
+  # 机器人未启用加签时留空。
+  secret: ""
+
+http:
+  timeout_seconds: 20
+  retry_attempts: 3
+  retry_delay_seconds: 10
+
+source:
+  # 默认 bridge 网络通过 NAS 映射端口访问主服务。
+  api_url: "http://NAS_IP:8000"
+  # 仅用于通知中的“打开查看”链接，可填写公网 HTTPS 域名。
+  web_url: "https://canventory.example.com"
+  # 建议创建只用于提醒的 Canventory 账号。
+  username: "notifier"
+  password: "CHANGE-ME-CANVENTORY-PASSWORD"

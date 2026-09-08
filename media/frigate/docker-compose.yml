@@ -12,9 +12,12 @@
 #
 # 部署前准备:
 #   1. 在 ./config/config.yml 中配置摄像头 RTSP 地址
-#   2. 在下方 frigate-notify 环境变量中填写钉钉机器人 Webhook 和密钥
+#   2. 在 ./notify/config.yml 中填写 MQTT、网页域名和钉钉机器人配置
 #   3. 确保 /dev/dri/renderD128 设备存在（核显直通），否则删除 devices 和 privileged
-#   4. 所有服务在 docker bridge 网络内通过容器名通信，无需暴露端口到宿主机
+#   4. 默认 bridge 网络不能使用 Compose 服务名解析，通知容器通过 NAS_IP:1883 访问 MQTT
+#
+# 安全提醒: 当前 Mosquitto 允许匿名访问，仅应在可信局域网使用，不要映射到公网。
+# MQTT 账号、ACL 和 Frigate 截图通知将在后续版本完善。
 #
 # 端口说明:
 #   8971 — Frigate Web UI
@@ -34,6 +37,8 @@ services:
     container_name: frigate
     network_mode: bridge
     restart: unless-stopped
+    # 不要为 Frigate 核心服务启用 init: true；当前镜像在现有部署环境中
+    # 会因此出现启动进程被接管、核心服务无法正常启动的问题。
     privileged: true
     stop_grace_period: 30s
     shm_size: "512mb"
@@ -69,7 +74,7 @@ services:
     pids_limit: 512
 
     volumes:
-      # 宿主机时区文件（Asia/Shanghai），确保容器时间与宿主机一致
+      # 随模板附带的 Asia/Shanghai 时区文件
       - ./localtime:/etc/localtime:ro
       - ./config:/config
       # 录像存储目录 — 挂载实际存储路径
@@ -109,32 +114,23 @@ services:
       - ./mqtt/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./mqtt/data:/mosquitto/data
 
-  frigate-notify:
-    image: python:3.12-alpine
+  notify:
+    # 若已离线导入镜像，可改为 nas-notifier:local。
+    image: ghcr.io/vincentyzhu/nas-notifier:latest
     container_name: frigate-notify
     network_mode: bridge
     restart: unless-stopped
     init: true
-    working_dir: /app
 
     depends_on:
       - mosquitto
       - frigate
 
-    command: sh -c "pip install -q -r requirements.txt && python notify.py"
-
     environment:
-      TZ: Asia/Shanghai
-      # 填写 mosquittoIP 地址
-      MQTT_HOST: ""
-      MQTT_PORT: "1883"
-      MQTT_TOPIC: "frigate/events"
-      # 钉钉机器人 Webhook — 替换为实际地址
-      DINGTALK_WEBHOOK: ""
-      # 钉钉机器人加签密钥 — 替换为实际值（未设置加签则留空）
-      DINGTALK_SECRET: ""
-      # Frigate API 地址 — 同一 compose 内用容器名
-      FRIGATE_URL: "http://frigate:5000"
+      CONFIG_FILE: /config/config.yml
+
+    volumes:
+      - ./notify/config.yml:/config/config.yml:ro
 
     security_opt:
       - no-new-privileges:true
@@ -149,7 +145,3 @@ services:
     cpus: 0.3
     pids_limit: 64
     stop_grace_period: 30s
-
-    volumes:
-      - ./notify/requirements.txt:/app/requirements.txt:ro
-      - ./notify/notify.py:/app/notify.py:ro
