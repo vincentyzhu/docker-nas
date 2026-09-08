@@ -1,73 +1,84 @@
 # ============================================================
-# WUD (What's Up Docker) — Docker 镜像更新通知
-# 自动检测容器镜像更新，通过邮件/钉钉发送通知
+# WUD (What's Up Docker) — Docker 镜像更新检测与钉钉通知
 #
-# 部署前准备:
-#   1. 填写 SMTP QQ 邮箱信息（USER/PASS/FROM/TO）
-#   2. 设置 Web 登录账号密码（WUD_AUTH_BASIC_*）
-#   3. 数据持久化在 ./store
+# 默认通知方式：钉钉自定义机器人（Command Trigger，批量模式）。
+# 可选通知方式：SMTP 邮件；相关配置保留在下方，按需取消注释。
 #
-# SMTP 说明:
-#   - HOST: smtp.qq.com, PORT: 465 (SSL)
-#   - PASS 需要 QQ 邮箱 SMTP 授权码（非 QQ 密码）
-#   - TO 可多个收件人，逗号分隔
+# 部署前准备：
+#   1. 复制 .env.example 为 .env，并填写钉钉和登录配置。
+#   2. 保持 dingtalk-notify.sh 与本文件位于同一目录。
+#   3. 执行 docker compose config 检查配置，再启动服务。
 #
-# 启动:      docker compose up -d
-# 访问:      http://host:3000
+# 镜像策略：getwud/wud:8 自动跟随 8.x 的小版本和补丁更新，
+# 同时避免未来 9.x 的破坏性变更直接进入现有部署。
+#
+# 启动：docker compose up -d
+# 访问：http://host:3000
 # ============================================================
 
 name: wud
 
 services:
   wud:
-    image: getwud/wud:latest
+    image: getwud/wud:8
     container_name: wud
     network_mode: bridge
     restart: unless-stopped
     init: true
 
     ports:
+      # 公开模板保持默认端口直接映射；复制到 NAS 后可修改宿主机端口。
       - "3000:3000"
 
     volumes:
+      # WUD 需要读取 Docker 状态；即使只读挂载，docker.sock 仍具有较高权限。
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./store:/store
+      - ./dingtalk-notify.sh:/scripts/dingtalk-notify.sh:ro
 
     environment:
       TZ: Asia/Shanghai
 
       # Docker 本机监控
       WUD_WATCHER_LOCAL_SOCKET: /var/run/docker.sock
-      WUD_WATCHER_LOCAL_WATCHBYDEFAULT: true
+      WUD_WATCHER_LOCAL_WATCHBYDEFAULT: "true"
       WUD_LOG_LEVEL: warn
-      # 每日10点扫描一次
+      # 每日 10:00 扫描一次（使用上方 TZ 时区）。
       WUD_WATCHER_LOCAL_CRON: "0 10 * * *"
 
-      # SMTP Trigger 名称，这里取 qq
-      WUD_TRIGGER_SMTP_QQ_HOST: smtp.qq.com
-      WUD_TRIGGER_SMTP_QQ_PORT: 465
-      # 启用 SSL（465端口）
-      WUD_TRIGGER_SMTP_QQ_TLS_ENABLED: true
-      # 登录账号，替换为实际值
-      WUD_TRIGGER_SMTP_QQ_USER: 
-      # QQ邮箱 SMTP 授权码（不是QQ密码），替换为实际值
-      WUD_TRIGGER_SMTP_QQ_PASS: 
-      # 发件人，替换为实际值
-      WUD_TRIGGER_SMTP_QQ_FROM: 
-      # 收件人，可多个，逗号分隔，替换为实际值
-      WUD_TRIGGER_SMTP_QQ_TO: 
-      # 邮件标题（可选）
-      WUD_TRIGGER_SMTP_QQ_SIMPLETITLE: "WUD: $${name} 有可用更新"
-      # 邮件正文模板（可选）
-      WUD_TRIGGER_SMTP_QQ_SIMPLEBODY: |
-        容器 $${name} 有新版本
-        当前版本：$${local}
-        最新版本：$${remote}
+      # ---------- 钉钉机器人通知（默认启用） ----------
+      WUD_TRIGGER_COMMAND_DINGTALK_CMD: /scripts/dingtalk-notify.sh
+      WUD_TRIGGER_COMMAND_DINGTALK_SHELL: /bin/sh
+      WUD_TRIGGER_COMMAND_DINGTALK_MODE: batch
+      WUD_TRIGGER_COMMAND_DINGTALK_THRESHOLD: all
+      # 脚本最坏耗时约 55 秒；留出充足余量，避免 WUD 在重试完成前终止脚本。
+      WUD_TRIGGER_COMMAND_DINGTALK_TIMEOUT: "90000"
 
-      # Web登录 — 替换为实际值
-      # 用户名和 bcrypt 哈希，可用 htpasswd -nB <用户名> 生成
-      WUD_AUTH_BASIC_VINCENT_USER: 
-      WUD_AUTH_BASIC_VINCENT_HASH: 
+      DINGTALK_WEBHOOK: "${DINGTALK_WEBHOOK:?请复制 .env.example 为 .env 并填写 DINGTALK_WEBHOOK}"
+      DINGTALK_SECRET: "${DINGTALK_SECRET:-}"
+      # 总尝试次数（包含首次发送）及重试间隔；仅临时网络/服务端错误会重试。
+      DINGTALK_MAX_ATTEMPTS: "${DINGTALK_MAX_ATTEMPTS:-3}"
+      DINGTALK_RETRY_DELAY_SECONDS: "${DINGTALK_RETRY_DELAY_SECONDS:-5}"
+
+      # ---------- Web 登录（兼容现有 Basic Auth 配置） ----------
+      WUD_AUTH_BASIC_VINCENT_USER: "${WUD_BASIC_USER:?请填写 WUD_BASIC_USER}"
+      WUD_AUTH_BASIC_VINCENT_HASH: "${WUD_BASIC_HASH:?请填写 WUD_BASIC_HASH}"
+
+      # ---------- SMTP 邮件通知（可选，默认关闭） ----------
+      # 如需使用，先在 .env 填写 WUD_SMTP_*，再取消以下配置的注释。
+      # QQ 邮箱 465 端口使用隐式 TLS；PASS 应填写 SMTP 授权码，而非 QQ 密码。
+      # WUD_TRIGGER_SMTP_QQ_HOST: smtp.qq.com
+      # WUD_TRIGGER_SMTP_QQ_PORT: "465"
+      # WUD_TRIGGER_SMTP_QQ_TLS_ENABLED: "true"
+      # WUD_TRIGGER_SMTP_QQ_USER: "${WUD_SMTP_USER}"
+      # WUD_TRIGGER_SMTP_QQ_PASS: "${WUD_SMTP_PASS}"
+      # WUD_TRIGGER_SMTP_QQ_FROM_ADDRESS: "${WUD_SMTP_FROM}"
+      # WUD_TRIGGER_SMTP_QQ_TO: "${WUD_SMTP_TO}"
+      # WUD_TRIGGER_SMTP_QQ_SIMPLETITLE: "WUD: $${container.name} 有可用更新"
+      # WUD_TRIGGER_SMTP_QQ_SIMPLEBODY: |
+      #   容器 $${container.name} 有新版本
+      #   当前版本：$${container.updateKind.localValue}
+      #   最新版本：$${container.updateKind.remoteValue}
 
     security_opt:
       - no-new-privileges:true
