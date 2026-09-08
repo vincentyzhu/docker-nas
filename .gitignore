@@ -9,6 +9,8 @@
 */*/media/*
 **/storage/*
 !**/.gitkeep
+# Vaultwarden 只提交不含真实密钥的示例；实际 config.json 继续忽略。
+!security/vaultwarden/data/config.example.json
 
 # 系统 / 编辑器文件
 .DS_Store
