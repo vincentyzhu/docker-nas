@@ -8,7 +8,7 @@
 #   4. 数据保存在 ./data，请将该目录与 .env 一并纳入备份
 #
 # 启动：docker compose up -d
-# 访问：http://NAS_IP:6191
+# 访问：http://NAS_IP:6989
 # ============================================================
 
 name: nexterm
@@ -23,7 +23,7 @@ services:
     init: true
 
     ports:
-      - "6191:6989"
+      - "6989:6989"
 
     environment:
       TZ: Asia/Shanghai
