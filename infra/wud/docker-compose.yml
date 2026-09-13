@@ -7,10 +7,10 @@
 # 部署前准备：
 #   1. 复制 .env.example 为 .env，并填写钉钉和登录配置。
 #   2. 保持 dingtalk-notify.sh 与本文件位于同一目录。
-#   3. 执行 docker compose config 检查配置，再启动服务。
+#   3. 执行 docker compose config --quiet 检查配置，再启动服务。
 #
-# 镜像策略：getwud/wud:8 自动跟随 8.x 的小版本和补丁更新，
-# 同时避免未来 9.x 的破坏性变更直接进入现有部署。
+# 镜像策略：getwud/wud:9 持续跟随 9.x 更新，不自动跨越到 10.x。
+# 从 8.x 升级前先停止 WUD 并备份 store/；首次启动会迁移为 SQLite。
 #
 # 启动：docker compose up -d
 # 访问：http://host:3000
@@ -20,7 +20,7 @@ name: wud
 
 services:
   wud:
-    image: getwud/wud:8
+    image: getwud/wud:9
     container_name: wud
     network_mode: bridge
     restart: unless-stopped
@@ -60,9 +60,10 @@ services:
       DINGTALK_MAX_ATTEMPTS: "${DINGTALK_MAX_ATTEMPTS:-3}"
       DINGTALK_RETRY_DELAY_SECONDS: "${DINGTALK_RETRY_DELAY_SECONDS:-5}"
 
-      # ---------- Web 登录（兼容现有 Basic Auth 配置） ----------
-      WUD_AUTH_BASIC_VINCENT_USER: "${WUD_BASIC_USER:?请填写 WUD_BASIC_USER}"
-      WUD_AUTH_BASIC_VINCENT_HASH: "${WUD_BASIC_HASH:?请填写 WUD_BASIC_HASH}"
+      # ---------- Web 管理员登录（9.x 强制认证） ----------
+      # PASSWORD 填写实际密码，由 WUD 哈希后写入数据库；不能填写旧 htpasswd 哈希。
+      WUD_AUTH_ADMIN_USER: "${WUD_AUTH_ADMIN_USER:?请填写 WUD_AUTH_ADMIN_USER}"
+      WUD_AUTH_ADMIN_PASSWORD: "${WUD_AUTH_ADMIN_PASSWORD:?请填写 WUD_AUTH_ADMIN_PASSWORD}"
 
       # ---------- SMTP 邮件通知（可选，默认关闭） ----------
       # 如需使用，先在 .env 填写 WUD_SMTP_*，再取消以下配置的注释。
