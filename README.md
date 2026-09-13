@@ -54,7 +54,7 @@
 | 媒体 | Music Tag Web | 音乐标签整理 | 8002 |
 | 媒体 | qBittorrent | BT 下载管理 | 8080、6881 |
 | 媒体 | TinyMediaManager | 影视元数据管理 | 4000 |
-| 安全 | Nexterm | Web SSH/RDP/VNC 管理 | 6989 |
+| 安全 | Nexterm | SSH、VNC、RDP 与 SFTP 管理 | 6191 |
 | 安全 | Vaultwarden | Bitwarden 兼容密码管理 | 80 |
 | 工具 | IT Tools | 常用开发与运维工具 | 80 |
 | 工具 | 极速箱 | 在线工具集合 | 3000 |

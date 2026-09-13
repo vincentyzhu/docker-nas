@@ -5,4 +5,4 @@
 | 服务 | 用途 |
 |------|------|
 | vaultwarden | 自托管密码管理器 |
-| nexterm | Web SSH 终端 |
+| nexterm | SSH、VNC、RDP 与 SFTP 服务器管理 |

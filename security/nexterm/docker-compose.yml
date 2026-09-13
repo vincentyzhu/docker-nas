@@ -1,36 +1,37 @@
 # ============================================================
-# Nexterm — Web SSH 终端
-# 浏览器端 SSH 客户端，无需安装任何软件
+# Nexterm — SSH、VNC、RDP 与 SFTP 服务器管理平台
 #
-# 部署前准备:
-#   1. 生成高强度随机密钥替换 ENCRYPTION_KEY（生成后不可更改！）
-#      生成命令: openssl rand -base64 32
-#   2. 数据持久化在 ./data
+# 部署前准备：
+#   1. 复制 .env.example 为 .env
+#   2. 执行 openssl rand -hex 32 生成加密密钥并填写到 .env
+#   3. ENCRYPTION_KEY 投入使用后不得修改，否则已有敏感数据将无法解密
+#   4. 数据保存在 ./data，请将该目录与 .env 一并纳入备份
 #
-# 启动:      docker compose up -d
-# 访问:      http://host:6989
+# 启动：docker compose up -d
+# 访问：http://NAS_IP:6191
 # ============================================================
 
 name: nexterm
 
 services:
   nexterm:
-    image: germannewsmaker/nexterm:latest
+    # 官方 All-In-One 镜像，包含 Web 服务与连接引擎。
+    image: nexterm/aio:latest
     container_name: nexterm
     network_mode: bridge
     restart: unless-stopped
     init: true
 
     ports:
-      - "6989:6989"
-
-    volumes:
-      - ./data:/app/data
+      - "6191:6989"
 
     environment:
       TZ: Asia/Shanghai
-      # 加密密钥 — 替换为高强度随机字符串，生成后不可更改
-      ENCRYPTION_KEY: "替换为长期固定的高强度随机密钥"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:?请复制 .env.example 为 .env 并填写 ENCRYPTION_KEY}"
+
+    volumes:
+      # 数据库、凭据、配置和日志均保存在此目录，必须纳入备份。
+      - ./data:/app/data
 
     security_opt:
       - no-new-privileges:true
@@ -41,7 +42,8 @@ services:
         max-size: "20m"
         max-file: "3"
 
-    mem_limit: 512m
+    # AIO 同时运行 Web 服务和远程连接引擎，预留适度资源。
+    mem_limit: 1g
     cpus: 1.0
     pids_limit: 256
     stop_grace_period: 30s
