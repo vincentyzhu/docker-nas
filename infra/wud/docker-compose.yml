@@ -1,16 +1,15 @@
 # ============================================================
-# WUD (What's Up Docker) — Docker 镜像更新检测与钉钉通知
+# WUD (What's Up Docker) — Docker 镜像更新检测与机器人通知
 #
 # 默认通知方式：钉钉自定义机器人（Command Trigger，批量模式）。
-# 可选通知方式：SMTP 邮件；相关配置保留在下方，按需取消注释。
+# 可切换为企业微信群机器人；SMTP 邮件可独立启用。
 #
 # 部署前准备：
-#   1. 复制 .env.example 为 .env，并填写钉钉和登录配置。
+#   1. 复制 .env.example 为 .env，并填写通知通道、机器人和登录配置。
 #   2. 保持 dingtalk-notify.sh 与本文件位于同一目录。
 #   3. 执行 docker compose config --quiet 检查配置，再启动服务。
 #
 # 镜像策略：getwud/wud:9 持续跟随 9.x 更新，不自动跨越到 10.x。
-# 从 8.x 升级前先停止 WUD 并备份 store/；首次启动会迁移为 SQLite。
 #
 # 启动：docker compose up -d
 # 访问：http://host:3000
@@ -46,22 +45,28 @@ services:
       # 每日 10:00 扫描一次（使用上方 TZ 时区）。
       WUD_WATCHER_LOCAL_CRON: "0 10 * * *"
 
-      # ---------- 钉钉机器人通知（默认启用） ----------
+      # ---------- 机器人通知（默认钉钉，可切换企业微信） ----------
       WUD_TRIGGER_COMMAND_DINGTALK_CMD: /scripts/dingtalk-notify.sh
       WUD_TRIGGER_COMMAND_DINGTALK_SHELL: /bin/sh
       WUD_TRIGGER_COMMAND_DINGTALK_MODE: batch
       WUD_TRIGGER_COMMAND_DINGTALK_THRESHOLD: all
-      # 脚本最坏耗时约 55 秒；留出充足余量，避免 WUD 在重试完成前终止脚本。
-      WUD_TRIGGER_COMMAND_DINGTALK_TIMEOUT: "90000"
+      # 企业微信长消息可能拆分为多条并分别重试，因此预留 5 分钟。
+      WUD_TRIGGER_COMMAND_DINGTALK_TIMEOUT: "300000"
 
-      DINGTALK_WEBHOOK: "${DINGTALK_WEBHOOK:?请复制 .env.example 为 .env 并填写 DINGTALK_WEBHOOK}"
+      NOTIFY_CHANNEL: "${NOTIFY_CHANNEL:-dingtalk}"
+
+      # 未选中的通道可留空，由通知脚本校验所选通道的必填项。
+      DINGTALK_WEBHOOK: "${DINGTALK_WEBHOOK:-}"
       DINGTALK_SECRET: "${DINGTALK_SECRET:-}"
-      # 总尝试次数（包含首次发送）及重试间隔；仅临时网络/服务端错误会重试。
       DINGTALK_MAX_ATTEMPTS: "${DINGTALK_MAX_ATTEMPTS:-3}"
       DINGTALK_RETRY_DELAY_SECONDS: "${DINGTALK_RETRY_DELAY_SECONDS:-5}"
 
+      WECOM_WEBHOOK: "${WECOM_WEBHOOK:-}"
+      WECOM_MAX_ATTEMPTS: "${WECOM_MAX_ATTEMPTS:-3}"
+      WECOM_RETRY_DELAY_SECONDS: "${WECOM_RETRY_DELAY_SECONDS:-5}"
+
       # ---------- Web 管理员登录（9.x 强制认证） ----------
-      # PASSWORD 填写实际密码，由 WUD 哈希后写入数据库；不能填写旧 htpasswd 哈希。
+      # PASSWORD 填写实际密码，由 WUD 哈希后写入数据库。
       WUD_AUTH_ADMIN_USER: "${WUD_AUTH_ADMIN_USER:?请填写 WUD_AUTH_ADMIN_USER}"
       WUD_AUTH_ADMIN_PASSWORD: "${WUD_AUTH_ADMIN_PASSWORD:?请填写 WUD_AUTH_ADMIN_PASSWORD}"
 
