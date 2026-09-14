@@ -10,11 +10,13 @@
 
 ## 部署方式
 
-公开服务模板默认在线拉取 GHCR 镜像：
+公开服务模板默认跟随当前 `0.2` 系列的补丁版本：
 
 ```yaml
-image: ghcr.io/vincentyzhu/nas-notifier:latest
+image: ghcr.io/vincentyzhu/nas-notifier:0.2
 ```
+
+如需完全固定部署内容，可以使用完整版本号 `0.2.0`。
 
 无法访问 GHCR 的 NAS 可以在有 Docker 的电脑构建并导出镜像，然后将服务模板中的镜像改为：
 
@@ -171,9 +173,22 @@ Frigate 配置：
 
 如果出现“宿主机可联网、所有 bridge 容器访问公网超时”，应检查上游路由器/iStoreOS 是否存在 Docker 子网回程路由或 MASQUERADE 规则。这个问题不是通知脚本或 DNS 造成的；修复后需把规则持久化，避免路由器重启后复发。
 
-## 发布到 GitHub
+## 版本与发布
 
-独立仓库可以使用 `.github/workflows/docker-publish.yml` 发布镜像；集成到 Docker-NAS 后，由仓库根目录的 `.github/workflows/nas-notifier.yml` 在相关源码更新时构建 `linux/amd64` 和 `linux/arm64` 镜像并发布到 GitHub Container Registry：
+`nas-notifier` 使用语义化版本，Git 标签带组件前缀，避免与 Docker-NAS
+仓库中的其他服务混淆。当前版本为 `0.2.0`，对应标签：
+
+```text
+nas-notifier-v0.2.0
+```
+
+推送正式版本标签后，工作流会运行全部单元测试，并构建
+`linux/amd64`、`linux/arm64` 镜像。`0.2.0` 是固定版本，`0.2` 跟随该
+系列的补丁更新，`latest` 指向最新正式版；`sha-*` 用于定位具体提交。
+0.x 阶段不发布宽泛的 `0` 标签，因为不同次版本之间仍可能存在不兼容
+调整。
+
+普通 `main` 分支提交只发布 `sha-*` 镜像，不更新 `latest`。正式镜像地址：
 
 ```text
 ghcr.io/<GitHub用户名>/nas-notifier:latest
@@ -181,7 +196,7 @@ ghcr.io/<GitHub用户名>/nas-notifier:latest
 
 首次发布后，在 GitHub Packages 中把镜像可见性设为 Public，其他用户即可直接拉取。公开仓库中只提交 `*.example.yml`，不要提交实际配置文件。
 
-工作流会先运行全部单元测试；只有测试通过才会构建并推送 `linux/amd64`、`linux/arm64` 镜像。
+只有测试通过，工作流才会构建并推送镜像。
 
 ## 基础测试
 

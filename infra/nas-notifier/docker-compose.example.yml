@@ -1,10 +1,11 @@
 name: nas-notifier
 
 # 同一个镜像启动三个独立实例；每个实例只挂载自己的配置文件和通知通道。
-# 无法访问 GHCR 且已离线导入镜像时，可将三处 image 改为 nas-notifier:local。
+# 在线部署默认跟随 0.2 系列补丁；无法访问 GHCR 且已离线导入镜像时，
+# 可将三处 image 改为 nas-notifier:local。
 services:
   canventory-notify:
-    image: ghcr.io/vincentyzhu/nas-notifier:latest
+    image: ghcr.io/vincentyzhu/nas-notifier:0.2
     container_name: canventory-notify
     network_mode: bridge
     restart: unless-stopped
@@ -26,7 +27,7 @@ services:
     stop_grace_period: 30s
 
   homebox-notify:
-    image: ghcr.io/vincentyzhu/nas-notifier:latest
+    image: ghcr.io/vincentyzhu/nas-notifier:0.2
     container_name: homebox-notify
     network_mode: bridge
     restart: unless-stopped
@@ -48,7 +49,7 @@ services:
     stop_grace_period: 30s
 
   frigate-notify:
-    image: ghcr.io/vincentyzhu/nas-notifier:latest
+    image: ghcr.io/vincentyzhu/nas-notifier:0.2
     container_name: frigate-notify
     network_mode: bridge
     restart: unless-stopped
