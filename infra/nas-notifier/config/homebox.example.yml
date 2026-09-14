@@ -1,6 +1,8 @@
 # 复制为 homebox.yml 后填写真实信息。
 notifier:
   type: homebox
+  # 支持 dingtalk（钉钉）或 wecom（企业微信）。
+  channel: dingtalk
   timezone: Asia/Shanghai
 
 schedule:
@@ -11,6 +13,10 @@ schedule:
 dingtalk:
   webhook: "CHANGE-ME-DINGTALK-WEBHOOK"
   secret: ""
+
+wecom:
+  # 企业微信群“自定义消息推送”的完整 Webhook 地址。
+  webhook: "CHANGE-ME-WECOM-WEBHOOK"
 
 http:
   timeout_seconds: 20

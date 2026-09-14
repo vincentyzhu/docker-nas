@@ -7,9 +7,9 @@ from typing import Any
 import paho.mqtt.client as mqtt
 
 from notifier.config import ConfigError, as_bool, as_int, required_text
-from notifier.dingtalk import DingTalkClient
 from notifier.log import log
-from notifier.models import Notification
+from notifier.models import Notification, NotificationSender
+from notifier.policy import NotificationPolicy
 
 
 DEFAULT_LABEL_NAMES = {
@@ -35,7 +35,8 @@ class FrigateAdapter:
     def __init__(
         self,
         config: dict[str, Any],
-        dingtalk: DingTalkClient,
+        sender: NotificationSender,
+        policy: NotificationPolicy | None = None,
     ) -> None:
         mqtt_config = config.get("mqtt") or {}
         if not isinstance(mqtt_config, dict):
@@ -103,7 +104,8 @@ class FrigateAdapter:
             **label_names,
         }
 
-        self.dingtalk = dingtalk
+        self.sender = sender
+        self.policy = policy or NotificationPolicy()
         self.last_notify: dict[str, float] = {}
 
     def _display_camera(self, camera: str) -> str:
@@ -192,6 +194,8 @@ class FrigateAdapter:
             return
         if self.watch_cameras and camera not in self.watch_cameras:
             return
+        if not self.policy.allows():
+            return
 
         if self.cooldown > 0:
             cooldown_key = f"{camera}:{label}"
@@ -211,7 +215,7 @@ class FrigateAdapter:
             event_time = None
 
         try:
-            self.dingtalk.send(
+            self.sender.send(
                 self._notification(camera, label, event_id, event_time)
             )
             log(

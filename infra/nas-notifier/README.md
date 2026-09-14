@@ -6,7 +6,7 @@
 - Homebox 即将过保提醒（不包含已经过保的物品）
 - Frigate MQTT 实时事件提醒
 
-通知统一发送到钉钉自定义机器人，保留中文日志、定时执行、启动推送开关、空结果推送开关和失败重试。真实账号、API Key、Webhook 均放在外部 YAML 配置中，不写入镜像。
+通知可选择发送到钉钉自定义机器人或企业微信群自定义消息推送，保留中文日志、定时执行、启动推送开关、空结果推送开关和失败重试。真实账号、API Key、Webhook 均放在外部 YAML 配置中，不写入镜像。
 
 ## 部署方式
 
@@ -24,12 +24,59 @@ image: nas-notifier:local
 
 两种方式使用相同的 YAML 配置文件，不要同时运行在线版和离线版容器，否则会重复推送。
 
+## 通知通道
+
+每个实例通过 `notifier.channel` 选择一个通知通道：
+
+```yaml
+notifier:
+  type: canventory
+  channel: wecom
+
+wecom:
+  webhook: "CHANGE-ME-WECOM-WEBHOOK"
+```
+
+可选值：
+
+- `dingtalk`：钉钉自定义机器人；兼容旧配置，不填写 `channel` 时仍使用钉钉。
+- `wecom`：企业微信群中的“自定义消息推送”，填写完整 Webhook 地址，不需要额外密钥。
+
+一个实例只发送到所选通道。企业微信和钉钉的消息格式不同，程序会根据通道生成对应的 Markdown 请求；企业微信单条 Markdown 超过 4096 字节时会按 UTF-8 字节数自动拆分发送。
+
 ## 工作方式
 
 一个容器实例只运行一种通知类型。三个服务共用同一个 `nas-notifier` 镜像，但分别挂载 `canventory.yml`、`homebox.yml`、`frigate.yml`。
 
 - Canventory/Homebox：每天指定时间检查；默认每天 `08:00`，重启不推送。
 - Frigate：持续监听 MQTT；启动不推送；默认冷却时间为 `0`，每个符合条件的 `new` 事件都推送，通知包含事件文字和 Frigate 网页入口。
+
+## 通用通知策略
+
+`notification_policy` 可选配置适用于所有通知类型。省略该配置或设置
+`enabled: false` 时，保留原有行为；Canventory 和 Homebox 仍在每天 `08:00`
+执行。
+
+```yaml
+notification_policy:
+  enabled: true
+  # every_day、weekdays 或 china_workdays
+  calendar: china_workdays
+  time_ranges:
+    - start: "09:00"
+      end: "12:00"
+    - start: "13:00"
+      end: "18:00"
+```
+
+`china_workdays` 按中国法定工作日判断：法定节假日静默，调休周末正常
+通知。时间范围使用 24 小时制，包含开始时间、不包含结束时间，也支持跨
+午夜；开始和结束相同表示全天。省略 `time_ranges` 表示允许日期内全天
+通知。
+
+对于 Canventory 和 Homebox 等定时通知，`schedule.notify_time` 必须位于
+允许时间范围内，否则启动时会报告配置错误。进入新年度前应将
+`chinesecalendar` 更新到包含下一年度国务院放假安排的版本并重建镜像。
 
 ## 本机构建
 
@@ -91,12 +138,17 @@ docker image save -o nas-notifier-offline.tar nas-notifier:local
 通用配置：
 
 - `notifier.type`：`canventory`、`homebox` 或 `frigate`
+- `notifier.channel`：`dingtalk` 或 `wecom`；省略时默认 `dingtalk`
 - `notifier.timezone`：默认 `Asia/Shanghai`
 - `dingtalk.webhook`：钉钉自定义机器人 Webhook
 - `dingtalk.secret`：机器人开启加签时填写，否则留空
+- `wecom.webhook`：企业微信群“自定义消息推送”的完整 Webhook；没有额外加签密钥
 - `http.timeout_seconds`：HTTP 超时秒数
-- `http.retry_attempts`：钉钉发送总尝试次数
+- `http.retry_attempts`：消息发送总尝试次数
 - `http.retry_delay_seconds`：失败后重试间隔
+- `notification_policy.enabled`：是否启用通用通知日期和时段限制
+- `notification_policy.calendar`：`every_day`、`weekdays` 或 `china_workdays`
+- `notification_policy.time_ranges`：允许发送的一个或多个时间范围
 
 定时类型配置：
 

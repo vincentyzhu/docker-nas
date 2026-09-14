@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from notifier.adapters.frigate import FrigateAdapter
 
 
-class FakeDingTalk:
+class FakeSender:
     def __init__(self) -> None:
         self.notifications = []
 
@@ -15,14 +15,14 @@ class FakeDingTalk:
 
 class FrigateTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.dingtalk = FakeDingTalk()
+        self.sender = FakeSender()
         self.adapter = FrigateAdapter(
             {
                 "mqtt": {"host": "mqtt.test", "port": 1883},
                 "cooldown_seconds": 0,
                 "watch_labels": ["person"],
             },
-            self.dingtalk,
+            self.sender,
         )
 
     @staticmethod
@@ -41,7 +41,7 @@ class FrigateTests(unittest.TestCase):
     def test_zero_cooldown_sends_each_new_event(self) -> None:
         self.adapter._on_message(None, None, self.message("event-1"))
         self.adapter._on_message(None, None, self.message("event-2"))
-        self.assertEqual(len(self.dingtalk.notifications), 2)
+        self.assertEqual(len(self.sender.notifications), 2)
 
     def test_non_new_event_is_ignored(self) -> None:
         self.adapter._on_message(
@@ -49,7 +49,22 @@ class FrigateTests(unittest.TestCase):
             None,
             self.message("event-1", event_type="update"),
         )
-        self.assertEqual(self.dingtalk.notifications, [])
+        self.assertEqual(self.sender.notifications, [])
+
+    def test_policy_can_suppress_event(self) -> None:
+        policy = SimpleNamespace(allows=lambda: False)
+        adapter = FrigateAdapter(
+            {
+                "mqtt": {"host": "mqtt.test", "port": 1883},
+                "watch_labels": ["person"],
+            },
+            self.sender,
+            policy,
+        )
+
+        adapter._on_message(None, None, self.message("event-1"))
+
+        self.assertEqual(self.sender.notifications, [])
 
 
 if __name__ == "__main__":

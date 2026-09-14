@@ -1,3 +1,3 @@
-"""Configurable DingTalk notification sidecar for NAS applications."""
+"""Configurable notification sidecar for NAS applications."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
