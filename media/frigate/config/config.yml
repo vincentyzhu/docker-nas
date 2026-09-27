@@ -4,6 +4,7 @@
 #
 # 敏感值占位符（部署前替换为实际值）：
 #   - mosquitto服务IP       → MQTT Broker 的 IP（bridge 网络无法用容器名解析）
+#   - MQTT 账号/密码         → Mosquitto 密码文件中的 Frigate 账号
 #   - 摄像头登录用户/密码    → 摄像头 RTSP 认证凭证
 #   - 摄像头IP             → 摄像头局域网 IP
 #   - go2rtc信令所在IP      → go2rtc WebRTC 信令地址
@@ -15,6 +16,8 @@ mqtt:
   # MQTT Broker 地址 — 替换为实际 IP（bridge 网络不解析容器名，故用 IP 而非容器名）
   host: mosquitto服务IP
   port: 1883
+  user: "frigate"
+  password: "CHANGE-ME-MQTT-FRIGATE-PASSWORD"
   # 事件主题前缀，检测事件发布到 frigate/events
   topic_prefix: frigate
 

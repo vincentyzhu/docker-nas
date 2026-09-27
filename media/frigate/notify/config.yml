@@ -41,7 +41,7 @@ source:
     port: 1883
     topic_prefix: frigate
     client_id: nas-notifier-frigate
-    username: ""
-    password: ""
+    username: "notifier"
+    password: "CHANGE-ME-MQTT-NOTIFIER-PASSWORD"
     tls: false
     keepalive: 60

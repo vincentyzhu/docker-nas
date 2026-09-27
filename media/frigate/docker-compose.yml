@@ -16,7 +16,7 @@
 #   3. 确保 /dev/dri/renderD128 设备存在（核显直通），否则删除 devices 和 privileged
 #   4. 默认 bridge 网络不能使用 Compose 服务名解析，通知容器通过 NAS_IP:1883 访问 MQTT
 #
-# 安全提醒: 当前 Mosquitto 允许匿名访问，仅应在可信局域网使用，不要映射到公网。
+# 安全提醒: Mosquitto 使用密码文件且禁止匿名访问；1883 未加密，仅应在可信局域网使用，不要映射到公网。
 #
 # 端口说明:
 #   8971 — Frigate Web UI
@@ -111,6 +111,7 @@ services:
 
     volumes:
       - ./mqtt/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      # 密码文件保存在已忽略的 mqtt/data 目录中，不提交到仓库。
       - ./mqtt/data:/mosquitto/data
 
   notify:
