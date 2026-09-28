@@ -1,6 +1,6 @@
 #!/bin/sh
 # ============================================================
-# WUD -> 钉钉/企业微信群机器人通知脚本 (v5)
+# WUD -> 机器人通知脚本（钉钉/企业微信，v5）
 # - 支持 WUD Command Trigger 的 batch/simple 两种模式
 # - 通过 NOTIFY_CHANNEL=dingtalk|wecom 选择通知通道
 # - 同时校验 HTTP 状态与平台 errcode
@@ -12,7 +12,7 @@ node -e '
 var crypto = require("crypto");
 var https = require("https");
 
-var channel = (process.env.NOTIFY_CHANNEL || "dingtalk").trim().toLowerCase();
+var channel = (process.env.NOTIFY_CHANNEL || "").trim().toLowerCase();
 if (channel !== "dingtalk" && channel !== "wecom") {
     console.error("[通知] NOTIFY_CHANNEL 必须是 dingtalk 或 wecom。");
     process.exit(1);

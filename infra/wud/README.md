@@ -1,11 +1,11 @@
 # WUD
 
-WUD 用于检测本机 Docker 容器的镜像更新。本模板默认通过钉钉自定义机器人发送中文批量通知，通知脚本也支持企业微信群机器人，并保留可选的 SMTP 邮件配置。
+WUD 用于检测本机 Docker 容器的镜像更新。本模板通过 `NOTIFY_CHANNEL` 选择钉钉或企业微信群机器人发送中文批量通知，并保留可选的 SMTP 邮件配置。
 
 ## 文件说明
 
 - `docker-compose.yml`：WUD 服务、机器人 Command Trigger 和可选 SMTP 配置。
-- `dingtalk-notify.sh`：将 WUD 的更新数据转换为钉钉或企业微信 Markdown 消息。为兼容现有 Compose 挂载，文件名保持不变。
+- `robot-notify.sh`：将 WUD 的更新数据转换为钉钉或企业微信 Markdown 消息。
 - `.env.example`：公开占位配置；复制后的 `.env` 不会被 Git 跟踪。
 - `store/`：WUD 运行数据目录，9.x 默认使用 `wud.sqlite`，不应提交到仓库。
 
@@ -23,7 +23,7 @@ docker compose up -d
 
 ## 通知配置
 
-`dingtalk-notify.sh` 通过 `NOTIFY_CHANNEL` 选择钉钉或企业微信群机器人。一次脚本调用只会向一个机器人通道发送；SMTP 是 WUD 的独立触发器，启用后可与当前机器人通道同时通知。
+`robot-notify.sh` 通过 `NOTIFY_CHANNEL` 选择钉钉或企业微信群机器人。一次脚本调用只会向一个机器人通道发送；SMTP 是 WUD 的独立触发器，启用后可与当前机器人通道同时通知。
 
 `.env` 只用于 Compose 变量替换，模板会将两个机器人通道的相关变量传入 WUD 容器；未选中的通道可以留空。不要将真实 Webhook、密钥或邮箱授权码提交到仓库。
 
@@ -31,7 +31,7 @@ docker compose up -d
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `NOTIFY_CHANNEL` | `dingtalk` | `dingtalk` 使用钉钉机器人，`wecom` 使用企业微信群机器人；其他值会使脚本退出。 |
+| `NOTIFY_CHANNEL` | 必填，示例为 `wecom` | `dingtalk` 使用钉钉机器人，`wecom` 使用企业微信群机器人；缺失或填写其他值会使配置校验或脚本执行失败。 |
 
 ### 钉钉自定义机器人
 

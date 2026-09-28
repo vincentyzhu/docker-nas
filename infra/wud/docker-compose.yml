@@ -1,12 +1,12 @@
 # ============================================================
 # WUD (What's Up Docker) — Docker 镜像更新检测与机器人通知
 #
-# 默认通知方式：钉钉自定义机器人（Command Trigger，批量模式）。
-# 可切换为企业微信群机器人；SMTP 邮件可独立启用。
+# 通知方式：通过 NOTIFY_CHANNEL 选择钉钉或企业微信群机器人
+# （Command Trigger，批量模式）；SMTP 邮件可独立启用。
 #
 # 部署前准备：
 #   1. 复制 .env.example 为 .env，并填写通知通道、机器人和登录配置。
-#   2. 保持 dingtalk-notify.sh 与本文件位于同一目录。
+#   2. 保持 robot-notify.sh 与本文件位于同一目录。
 #   3. 执行 docker compose config --quiet 检查配置，再启动服务。
 #
 # 镜像策略：getwud/wud:9 持续跟随 9.x 更新，不自动跨越到 10.x。
@@ -33,7 +33,7 @@ services:
       # WUD 需要读取 Docker 状态；即使只读挂载，docker.sock 仍具有较高权限。
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./store:/store
-      - ./dingtalk-notify.sh:/scripts/dingtalk-notify.sh:ro
+      - ./robot-notify.sh:/scripts/robot-notify.sh:ro
 
     environment:
       TZ: Asia/Shanghai
@@ -45,15 +45,15 @@ services:
       # 每日 10:00 扫描一次（使用上方 TZ 时区）。
       WUD_WATCHER_LOCAL_CRON: "0 10 * * *"
 
-      # ---------- 机器人通知（默认钉钉，可切换企业微信） ----------
-      WUD_TRIGGER_COMMAND_DINGTALK_CMD: /scripts/dingtalk-notify.sh
-      WUD_TRIGGER_COMMAND_DINGTALK_SHELL: /bin/sh
-      WUD_TRIGGER_COMMAND_DINGTALK_MODE: batch
-      WUD_TRIGGER_COMMAND_DINGTALK_THRESHOLD: all
+      # ---------- 机器人通知（由 NOTIFY_CHANNEL 选择通道） ----------
+      WUD_TRIGGER_COMMAND_ROBOT_CMD: /scripts/robot-notify.sh
+      WUD_TRIGGER_COMMAND_ROBOT_SHELL: /bin/sh
+      WUD_TRIGGER_COMMAND_ROBOT_MODE: batch
+      WUD_TRIGGER_COMMAND_ROBOT_THRESHOLD: all
       # 企业微信长消息可能拆分为多条并分别重试，因此预留 5 分钟。
-      WUD_TRIGGER_COMMAND_DINGTALK_TIMEOUT: "300000"
+      WUD_TRIGGER_COMMAND_ROBOT_TIMEOUT: "300000"
 
-      NOTIFY_CHANNEL: "${NOTIFY_CHANNEL:-dingtalk}"
+      NOTIFY_CHANNEL: "${NOTIFY_CHANNEL:?请填写 NOTIFY_CHANNEL，选择 dingtalk 或 wecom}"
 
       # 未选中的通道可留空，由通知脚本校验所选通道的必填项。
       DINGTALK_WEBHOOK: "${DINGTALK_WEBHOOK:-}"
