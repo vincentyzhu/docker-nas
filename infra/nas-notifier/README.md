@@ -10,10 +10,10 @@
 
 ## 部署方式
 
-公开服务模板默认跟随当前 `0.2` 系列的补丁版本：
+公开服务模板默认使用 `latest` 标签，跟随最新正式版：
 
 ```yaml
-image: ghcr.io/vincentyzhu/nas-notifier:0.2
+image: ghcr.io/vincentyzhu/nas-notifier:latest
 ```
 
 如需完全固定部署内容，可以使用完整版本号 `0.2.0`。
