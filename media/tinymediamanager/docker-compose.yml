@@ -7,7 +7,9 @@
 #   2. 如需修改媒体文件所有者，设置 USER_ID/GROUP_ID 为实际 UID
 #   3. 数据持久化在 ./data（含数据库和配置）
 #   4. 处理大媒体库时需较长时间，stop_grace_period 设为 60s
-#   5. 媒体库规模差异较大，模板不设硬性 CPU/内存上限，可按 NAS 性能自行添加
+#   5. 默认限制 4 核 CPU、4 GB 内存，禁用 swap；可按 NAS 性能与媒体库规模调整
+#   6. 部署前必须替换 PASSWORD 占位符；noVNC 连接时需输入此密码，无独立用户名
+#   7. 修改密码后需重新创建容器；配置与验证步骤见同目录 README.md
 #
 # 启动:      docker compose up -d
 # 访问:      http://host:4000
@@ -30,7 +32,8 @@ services:
       # ALLOW_DIRECT_VNC: "true"
       # LC_ALL: en_US.UTF-8
       # LANG: en_US.UTF-8
-      # PASSWORD: "..."
+      # 官方镜像远程访问密码；实际密码只在 NAS 本地填写，不提交到仓库
+      PASSWORD: "..."
 
     volumes:
       - ./data:/data
@@ -47,5 +50,11 @@ services:
       options:
         max-size: "20m"
         max-file: "3"
+
+    # 观察期间的资源上限：CPU 配额相当于 4 个核心，内存最多 4 GB
+    cpus: "4.0"
+    mem_limit: 4g
+    # 内存与 swap 总上限等于内存上限，禁止容器使用 swap
+    memswap_limit: 4g
 
     stop_grace_period: 60s

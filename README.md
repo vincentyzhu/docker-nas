@@ -53,7 +53,7 @@
 | 媒体 | Frigate | AI 视频监控、MQTT 与通知 | 8971、5000、8554、8555、1883 |
 | 媒体 | Music Tag Web | 音乐标签整理 | 8002 |
 | 媒体 | qBittorrent | BT 下载管理 | 8080、6881 |
-| 媒体 | TinyMediaManager | 影视元数据管理 | 4000 |
+| 媒体 | [TinyMediaManager](media/tinymediamanager/README.md) | 影视元数据管理、访问密码、4 核/4 GB 限额 | 4000 |
 | 安全 | Nexterm | SSH、VNC、RDP 与 SFTP 管理 | 6989 |
 | 安全 | Vaultwarden | Bitwarden 兼容密码管理 | 80 |
 | 工具 | IT Tools | 常用开发与运维工具 | 80 |
