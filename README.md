@@ -8,7 +8,7 @@
 - **自文档化**：每个 compose 文件头部写明了用途、部署前准备、端口说明，无需翻阅外部文档
 - **独立部署**：每个服务独立成目录，按需启停，可根据自己的网络环境调整配置
 - **模板优先**：保留服务常用端口；镜像按服务特点选择 `latest` 或明确版本，升级前应先阅读发行说明
-- **统一通知**：`nas-notifier` 使用同一镜像为 Canventory、Homebox 和 Frigate 发送中文钉钉通知
+- **统一通知**：`nas-notifier` 使用同一镜像为 Canventory、Homebox 和 Frigate 发送通知，支持钉钉机器人、企业微信群机器人和企业微信自建应用中继
 
 ## 目录结构
 
@@ -23,7 +23,7 @@
 | `tools/` | 通用工具与文件分享 |
 | `security/` | 安全与远程 |
 
-通用通知镜像源码位于 `infra/nas-notifier/`。Canventory、Homebox 和 Frigate 的部署目录只保留各自的 `notify/config.yml`，账号、API Key、Webhook 和域名均通过外部配置提供。
+通用通知镜像的当前源码版本为 `0.3.0`，构建和配置方法见 [NAS Notifier 使用说明](infra/nas-notifier/README.md)。Canventory、Homebox 和 Frigate 共用镜像，各自挂载部署目录下的 `notify/config.yml`。使用企业微信自建应用时，将 `notifier.channel` 设为 `wecom_relay`，填写 `wecom_relay.url`，并通过容器环境变量 `WECOM_RELAY_TOKEN` 提供对应中继通道的密钥。
 
 ## 服务索引
 
