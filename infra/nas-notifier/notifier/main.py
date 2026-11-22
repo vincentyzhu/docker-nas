@@ -10,6 +10,7 @@ from notifier.models import NotificationSender
 from notifier.policy import NotificationPolicy
 from notifier.schedule import run_daily
 from notifier.wecom import WeComClient
+from notifier.wecom_relay import WeComRelayClient
 
 
 def build_sender(config: dict[str, Any]) -> tuple[str, NotificationSender]:
@@ -20,7 +21,9 @@ def build_sender(config: dict[str, Any]) -> tuple[str, NotificationSender]:
         return channel, DingTalkClient(config["dingtalk"], config["http"])
     if channel == "wecom":
         return channel, WeComClient(config["wecom"], config["http"])
-    raise ConfigError("notifier.channel 必须是 dingtalk 或 wecom")
+    if channel == "wecom_relay":
+        return channel, WeComRelayClient(config["wecom_relay"], config["http"])
+    raise ConfigError("notifier.channel 必须是 dingtalk、wecom 或 wecom_relay")
 
 
 def build_adapter(

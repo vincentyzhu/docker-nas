@@ -6,7 +6,7 @@
 - Homebox 即将过保提醒（不包含已经过保的物品）
 - Frigate MQTT 实时事件提醒
 
-通知可选择发送到钉钉自定义机器人或企业微信群自定义消息推送，保留中文日志、定时执行、启动推送开关、空结果推送开关和失败重试。真实账号、API Key、Webhook 均放在外部 YAML 配置中，不写入镜像。
+通知可选择发送到钉钉自定义机器人、企业微信群自定义消息推送或企业微信自建应用中继，保留中文日志、定时执行、启动推送开关、空结果推送开关和失败重试。运行时通过外部 YAML 配置或容器环境变量提供账号、API Key、Webhook 和中继密钥。
 
 ## 部署方式
 
@@ -43,8 +43,9 @@ wecom:
 
 - `dingtalk`：钉钉自定义机器人；兼容旧配置，不填写 `channel` 时仍使用钉钉。
 - `wecom`：企业微信群中的“自定义消息推送”，填写完整 Webhook 地址，不需要额外密钥。
+- `wecom_relay`：向自建应用中继发 HTTPS POST。配置 `wecom_relay.url`（例如 `https://relay.example.com/notify/owner`），并通过容器环境变量 `WECOM_RELAY_TOKEN` 提供对应路由的 Bearer 密钥。
 
-一个实例只发送到所选通道。企业微信和钉钉的消息格式不同，程序会根据通道生成对应的 Markdown 请求；企业微信单条 Markdown 超过 4096 字节时会按 UTF-8 字节数自动拆分发送。
+一个实例只发送到所选通道。钉钉和企业微信群机器人通道使用 Markdown，企业微信群机器人单条消息超过 4096 字节时会自动拆分。自建应用通道向中继提交 JSON 文本，单次发送失败会记录到日志。
 
 ## 工作方式
 
@@ -140,7 +141,7 @@ docker image save -o nas-notifier-offline.tar nas-notifier:local
 通用配置：
 
 - `notifier.type`：`canventory`、`homebox` 或 `frigate`
-- `notifier.channel`：`dingtalk` 或 `wecom`；省略时默认 `dingtalk`
+- `notifier.channel`：`dingtalk`、`wecom` 或 `wecom_relay`；省略时默认 `dingtalk`
 - `notifier.timezone`：默认 `Asia/Shanghai`
 - `dingtalk.webhook`：钉钉自定义机器人 Webhook
 - `dingtalk.secret`：机器人开启加签时填写，否则留空
@@ -176,14 +177,14 @@ Frigate 配置：
 ## 版本与发布
 
 `nas-notifier` 使用语义化版本，Git 标签带组件前缀，避免与 Docker-NAS
-仓库中的其他服务混淆。当前版本为 `0.2.0`，对应标签：
+仓库中的其他服务混淆。当前源码版本为 `0.3.0`，对应的发布标签为：
 
 ```text
-nas-notifier-v0.2.0
+nas-notifier-v0.3.0
 ```
 
 推送正式版本标签后，工作流会运行全部单元测试，并构建
-`linux/amd64`、`linux/arm64` 镜像。`0.2.0` 是固定版本，`0.2` 跟随该
+`linux/amd64`、`linux/arm64` 镜像。`0.3.0` 是固定版本，`0.3` 跟随该
 系列的补丁更新，`latest` 指向最新正式版；`sha-*` 用于定位具体提交。
 0.x 阶段不发布宽泛的 `0` 标签，因为不同次版本之间仍可能存在不兼容
 调整。

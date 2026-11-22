@@ -1,9 +1,10 @@
+import os
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 import requests
 
-from notifier.config import required_text
+from notifier.config import as_int, required_text
 from notifier.log import log
 from notifier.models import Notification
 
@@ -20,8 +21,12 @@ class CanventoryAdapter:
             config.get("username"), "source.username"
         )
         self.password = required_text(
-            config.get("password"), "source.password"
+            os.getenv("CANVENTORY_PASSWORD", config.get("password")),
+            "CANVENTORY_PASSWORD 或 source.password",
         )
+        self.home_id = None
+        if "home_id" in config:
+            self.home_id = as_int(config["home_id"], "source.home_id", minimum=1)
         self.timeout = timeout
 
     def _token(self) -> str:
@@ -45,6 +50,23 @@ class CanventoryAdapter:
             raise ValueError("Canventory 提醒接口没有返回对象")
         return result
 
+    def _check_home(self, token: str) -> str:
+        response = requests.get(
+            f"{self.api_url}/api/homes/mine",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        homes = response.json()
+        if (
+            not isinstance(homes, list)
+            or len(homes) != 1
+            or not isinstance(homes[0], dict)
+            or homes[0].get("id") != self.home_id
+        ):
+            raise RuntimeError("通知账号必须仅属于配置的家庭，已跳过推送")
+        return str(homes[0].get("name") or f"家庭 {self.home_id}")
+
     @staticmethod
     def _quantity(item: dict[str, Any]) -> str:
         raw = item.get("quantity", 0)
@@ -61,7 +83,9 @@ class CanventoryAdapter:
         return str(value or "")[:10]
 
     def collect(self, send_empty: bool) -> Notification | None:
-        alerts = self._alerts(self._token())
+        token = self._token()
+        home_name = self._check_home(token) if self.home_id is not None else None
+        alerts = self._alerts(token)
         expired = alerts.get("expired_items", []) or []
         critical = alerts.get("critical_items", []) or []
         warning = alerts.get("warning_items", []) or []
@@ -71,7 +95,8 @@ class CanventoryAdapter:
             log("Canventory", "无临期或过期物品，跳过推送")
             return None
 
-        lines = ["## 🥫 冰箱库存到期提醒", ""]
+        title = f"{home_name} · 冰箱库存到期提醒" if home_name else "冰箱库存到期提醒"
+        lines = [f"## 🥫 {title}", ""]
         sections = (
             (
                 expired,
@@ -89,10 +114,10 @@ class CanventoryAdapter:
                 lambda item: f"{item.get('days_until_expiration', '')} 天后到期",
             ),
         )
-        for items, title, date_text in sections:
+        for items, heading, date_text in sections:
             if not items:
                 continue
-            lines.append(f"{title}（{len(items)} 件）")
+            lines.append(f"{heading}（{len(items)} 件）")
             for item in items:
                 category = str(item.get("category", "")).strip()
                 category_text = f"，{category}" if category else ""
@@ -105,6 +130,8 @@ class CanventoryAdapter:
 
         if total == 0:
             lines.extend(("当前没有临期或过期物品。", ""))
+        plain_lines = [line.removeprefix("## ").removeprefix("### ") for line in lines]
+        plain_lines.append(f"打开 Canventory 查看：{self.web_url}")
         lines.extend(("---", f"[打开 Canventory 查看]({self.web_url})"))
         log("Canventory", f"检查完成，符合条件 {total} 件")
-        return Notification("冰箱库存到期提醒", "\n".join(lines))
+        return Notification(title, "\n".join(lines), "\n".join(plain_lines))

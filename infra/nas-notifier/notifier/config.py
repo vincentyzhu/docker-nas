@@ -75,6 +75,7 @@ def load_config() -> dict[str, Any]:
     config["notifier"] = notifier
     config["dingtalk"] = as_dict(config.get("dingtalk"), "dingtalk")
     config["wecom"] = as_dict(config.get("wecom"), "wecom")
+    config["wecom_relay"] = as_dict(config.get("wecom_relay"), "wecom_relay")
     config["http"] = as_dict(config.get("http"), "http")
     config["source"] = as_dict(config.get("source"), "source")
     config["schedule"] = as_dict(config.get("schedule"), "schedule")

@@ -6,6 +6,7 @@ from typing import Protocol
 class Notification:
     title: str
     text: str
+    plain_text: str | None = None
 
 
 class NotificationSender(Protocol):
