@@ -23,7 +23,7 @@
 | `tools/` | 通用工具与文件分享 |
 | `security/` | 安全与远程 |
 
-通用通知镜像的当前源码版本为 `0.3.0`，构建和配置方法见 [NAS Notifier 使用说明](infra/nas-notifier/README.md)。Canventory、Homebox 和 Frigate 共用镜像，各自挂载部署目录下的 `notify/config.yml`。使用企业微信自建应用时，将 `notifier.channel` 设为 `wecom_relay`，填写 `wecom_relay.url`，并通过容器环境变量 `WECOM_RELAY_TOKEN` 提供对应中继通道的密钥。
+通用通知镜像的当前源码版本为 `0.3.0`，构建和配置方法见 [NAS Notifier 使用说明](infra/nas-notifier/README.md)。Canventory、Homebox 和 Frigate 共用镜像，各自挂载独立的通知配置文件。Homebox 和 Frigate 的部署模板提供 `notify/config.yml`。使用企业微信自建应用时，将 `notifier.channel` 设为 `wecom_relay`，填写 `wecom_relay.url`，并通过容器环境变量 `WECOM_RELAY_TOKEN` 提供对应中继通道的密钥。
 
 ## 服务索引
 
@@ -31,7 +31,6 @@
 
 | 分类 | 服务 | 用途 | 默认端口 |
 |------|------|------|----------|
-| 应用 | Canventory | 食品库存与到期提醒 | 8000 |
 | 应用 | DrawDB | 数据库关系图设计 | 80 |
 | 应用 | Draw.io | 流程图与图表编辑 | 8080 |
 | 应用 | Drawnix | 白板与图形绘制 | 80 |
