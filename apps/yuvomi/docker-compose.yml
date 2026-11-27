@@ -1,0 +1,49 @@
+# Yuvomi 家庭日程、任务与协作
+# 默认发布到宿主机回环 3000；通过 .env 设置访问地址和反代参数。
+# 多实例各用一个目录，并使用不同的 COMPOSE_PROJECT_NAME 和 YUVOMI_HOST_PORT。
+name: yuvomi
+
+services:
+  yuvomi:
+    image: ghcr.io/ulsklyc/yuvomi:2.96.0
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+
+    ports:
+      - "${YUVOMI_BIND_IP:-127.0.0.1}:${YUVOMI_HOST_PORT:-3000}:3000"
+
+    volumes:
+      # 数据库和应用自动生成的密钥位于 ./data。
+      - ./data:/data
+      - ./backups:/backups
+      - ./modules:/app/modules
+      - ./documents:/documents
+
+    environment:
+      TZ: "${TZ:-Asia/Shanghai}"
+      NODE_ENV: production
+      BASE_URL: "${BASE_URL:-http://127.0.0.1:3000}"
+      DB_PATH: /data/yuvomi.db
+      BACKUP_DIR: /backups
+      MODULES_DIR: /app/modules
+      DOCUMENT_STORAGE_LOCAL_ENABLED: "${DOCUMENT_STORAGE_LOCAL_ENABLED:-false}"
+      DOCUMENT_STORAGE_LOCAL_PATH: /documents
+      SESSION_SECURE: "${SESSION_SECURE:-false}"
+      TRUST_PROXY: "${TRUST_PROXY:-loopback}"
+      SESSION_SECRET: "${SESSION_SECRET:-}"
+      DB_ENCRYPTION_KEY: "${DB_ENCRYPTION_KEY:-}"
+
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"

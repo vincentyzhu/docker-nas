@@ -35,7 +35,9 @@
 | 应用 | Draw.io | 流程图与图表编辑 | 8080 |
 | 应用 | Drawnix | 白板与图形绘制 | 80 |
 | 应用 | Homebox | 家庭物品与质保管理 | 7745 |
+| 应用 | [Mirobody](apps/mirobody/README.md) | 健康数据管理与分析 | 18060 |
 | 应用 | SiYuan | 知识库与笔记 | 6806 |
+| 应用 | [Yuvomi](apps/yuvomi/README.md) | 家庭日程、任务与协作 | 3000 |
 | 文件 | BentoPDF | 浏览器端 PDF 工具 | 8080 |
 | 文件 | Image Watermark Tool | 图片水印处理 | 3000 |
 | 文件 | Morphos Server | 文件格式转换 | 8080 |

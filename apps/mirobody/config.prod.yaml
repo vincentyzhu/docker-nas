@@ -1,0 +1,3 @@
+# 使用正式模式，移除内置演示账号的固定验证码。
+PRODUCTION: true
+EMAIL_PREDEFINE_CODES: {}

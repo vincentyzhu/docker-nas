@@ -1,0 +1,136 @@
+# Mirobody 健康数据管理与分析
+# 复制 .env.example 为 .env 并填写密钥，预建 data/postgres 和 data/upload。
+# Web 默认使用宿主机回环 18060，数据库通过 Compose 卷中的 Unix socket 访问。
+name: mirobody
+
+x-service-defaults: &service-defaults
+  init: true
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "3"
+
+x-upload-mount: &upload-mount
+  type: bind
+  source: ./data/upload
+  target: /app/.theta/mcp/upload
+  bind:
+    create_host_path: false
+
+x-mirobody-app: &mirobody-app
+  <<: *service-defaults
+  image: thetahealth4mirobody/mirobody:1.6.2
+  network_mode: bridge
+  restart: unless-stopped
+  stop_grace_period: 30s
+  environment:
+    TZ: "${TZ:-Asia/Shanghai}"
+    ENV: prod
+    PYTHONUNBUFFERED: "1"
+    HTTP_HOST: 0.0.0.0
+    HTTP_PORT: "18060"
+    SEED_DEMO_DATA: "false"
+    PG_HOST: /run/postgresql
+    PG_PORT: "5432"
+    PG_USER: holistic_user
+    PG_DBNAME: holistic_db
+    PG_PASSWORD: "${PG_PASSWORD:?请在 .env 填写 PG_PASSWORD}"
+    PG_ENCRYPTION_KEY: "${PG_ENCRYPTION_KEY:?请在 .env 填写 PG_ENCRYPTION_KEY}"
+    DATABASE_DECRYPTION_KEY: "${DATABASE_DECRYPTION_KEY:?请在 .env 填写 DATABASE_DECRYPTION_KEY}"
+    CONFIG_ENCRYPTION_KEY: "${CONFIG_ENCRYPTION_KEY:?请在 .env 填写 CONFIG_ENCRYPTION_KEY}"
+    JWT_KEY: "${JWT_KEY:?请在 .env 填写 JWT_KEY}"
+    SETUP_TOKEN: "${SETUP_TOKEN:?请在 .env 填写 SETUP_TOKEN}"
+    MCP_PUBLIC_URL: "${MCP_PUBLIC_URL:-}"
+    FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1}"
+  volumes:
+    - *upload-mount
+    - type: volume
+      source: pg_socket
+      target: /run/postgresql
+      read_only: true
+      volume:
+        nocopy: true
+    - type: bind
+      source: ./config.prod.yaml
+      target: /app/config.prod.yaml
+      read_only: true
+      bind:
+        create_host_path: false
+
+services:
+  pg:
+    <<: *service-defaults
+    image: pgvector/pgvector:0.8.6-pg17-trixie
+    network_mode: bridge
+    restart: unless-stopped
+    shm_size: 256m
+    stop_grace_period: 60s
+    # 容器内的回环 TCP 只用于健康检查，应用与 worker 共用 Unix socket。
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1", "-c", "unix_socket_directories=/run/postgresql"]
+    environment:
+      TZ: "${TZ:-Asia/Shanghai}"
+      POSTGRES_USER: holistic_user
+      POSTGRES_DB: holistic_db
+      POSTGRES_PASSWORD: "${PG_PASSWORD:?请在 .env 填写 PG_PASSWORD}"
+    volumes:
+      - type: bind
+        source: ./data/postgres
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: false
+      - pg_socket:/run/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "holistic_user", "-d", "holistic_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  mirobody_init:
+    <<: *service-defaults
+    image: thetahealth4mirobody/mirobody:1.6.2
+    # 只修正上传目录的所有权和权限，成功退出后 Web 和 worker 才会启动。
+    user: "0:0"
+    restart: "no"
+    network_mode: none
+    healthcheck:
+      disable: true
+    command:
+      - sh
+      - -ec
+      - >-
+        find /app/.theta/mcp/upload \( ! -user mirobody -o ! -group mirobody \)
+        -exec chown -h mirobody:mirobody {} +
+        && chmod 0700 /app/.theta/mcp/upload
+    volumes:
+      - *upload-mount
+
+  mirobody:
+    <<: *mirobody-app
+    ports:
+      - "${MIROBODY_BIND_IP:-127.0.0.1}:${MIROBODY_HOST_PORT:-18060}:18060"
+    depends_on:
+      pg:
+        condition: service_healthy
+      mirobody_init:
+        condition: service_completed_successfully
+
+  mirobody_worker:
+    <<: *mirobody-app
+    command: ["mirobody", "worker"]
+    # worker 没有 HTTP 监听，禁用镜像用于 Web 进程的健康检查。
+    healthcheck:
+      disable: true
+    depends_on:
+      pg:
+        condition: service_healthy
+      mirobody_init:
+        condition: service_completed_successfully
+      mirobody:
+        condition: service_healthy
+
+volumes:
+  pg_socket:
